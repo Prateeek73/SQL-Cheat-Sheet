@@ -1,0 +1,5 @@
+# SQL practice environment
+# sqlite3 is in the Python standard library - nothing to install for the database itself.
+# (The original package listed `sqlite3` as a pip dependency; no such PyPI package exists.)
+pandas>=2.0
+kaggle>=2.2

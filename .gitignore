@@ -1,0 +1,30 @@
+# Datasets and built databases: ~1.1 GB combined, fully regenerable with
+#   python scripts/fetch.py && python scripts/build.py
+# Excluded by directory AND by extension, so a stray .db written anywhere
+# else cannot be staged by accident.
+data/
+db/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.csv
+*.zip
+
+# Generated report - regenerate with: python scripts/run.py
+docs/RESULTS.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Local tooling / editor state
+.claude/settings.local.json
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
