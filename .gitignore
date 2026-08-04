@@ -11,6 +11,9 @@ db/
 *.sqlite3
 *.csv
 *.zip
+*.agents
+*.claude
+
 
 # Generated report - regenerate with: python scripts/run.py
 docs/RESULTS.md

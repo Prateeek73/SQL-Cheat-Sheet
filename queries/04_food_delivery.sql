@@ -1,15 +1,4 @@
-/* PROJECT 4: FOOD DELIVERY | db/project_4_food.db | 21 queries
-   Kaggle: varshinipallerla/food-delivery (20,000 orders)
-   orders 20,000x18 | customers 20,000x8 | order_quality 20,000x7
-   restaurants 100x5 | raw_food_delivery_dataset = source (31 cols).
-   !! THIS DATASET IS RANDOMLY GENERATED - effect sizes 0.019-0.059, and
-   satisfaction is flat across all star ratings. Q16-Q18 test for signal and
-   correctly find none. Do not quote any driver finding as fact.
-   Also: dates have no clock, one order per customer, negative delay = early.
-   Full evidence: docs/DATA_NOTES.md */
-
--- ===== BEGINNER =====
--- Q1: Platform overview
+-- Q1: Platform overview ==> Beginner-friendly
 SELECT
     COUNT(*) AS total_orders, COUNT(DISTINCT restaurant_id) AS restaurants,
     COUNT(DISTINCT customer_id) AS customers, ROUND(SUM(order_value), 2) AS total_revenue,
@@ -20,7 +9,7 @@ SELECT
     MAX(order_date) AS last_order
 FROM orders;
 
--- Q2: Top restaurants by revenue
+-- Q2: Top restaurants by revenue ==> Beginner-friendly
 SELECT
     o.restaurant_id, COUNT(*) AS orders, ROUND(SUM(o.order_value), 2) AS revenue,
     ROUND(AVG(o.order_value), 2) AS avg_order_value,
@@ -32,7 +21,7 @@ GROUP BY o.restaurant_id, r.avg_rating
 ORDER BY revenue DESC
 LIMIT 20;
 
--- Q3: Most popular menu items
+-- Q3: Most popular menu items ==> Beginner-friendly
 SELECT
     food_item, COUNT(*) AS orders,
     ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM orders), 2) AS pct_of_orders,
@@ -42,7 +31,7 @@ FROM orders
 GROUP BY food_item
 ORDER BY orders DESC;
 
--- Q4: Demand by city
+-- Q4: Demand by city ==> Beginner-friendly
 SELECT
     c.location AS city, COUNT(*) AS orders, ROUND(SUM(o.order_value), 2) AS revenue,
     ROUND(AVG(o.order_value), 2) AS avg_order_value,
@@ -53,7 +42,7 @@ JOIN customers c ON o.customer_id = c.customer_id
 GROUP BY c.location
 ORDER BY revenue DESC;
 
--- Q5: Early, on-time and late deliveries
+-- Q5: Early, on-time and late deliveries ==> Beginner-friendly
 SELECT
     CASE
         WHEN delivery_delay_min < 0 THEN 'Early'
@@ -70,7 +59,7 @@ FROM orders
 GROUP BY delivery_outcome
 ORDER BY MIN(delivery_delay_min);
 
--- Q6: Customer base profile
+-- Q6: Customer base profile ==> Beginner-friendly
 SELECT
     loyalty_program, order_frequency, COUNT(*) AS customers, ROUND(AVG(age), 1) AS avg_age,
     ROUND(AVG(prior_order_count), 1) AS avg_prior_orders
@@ -78,8 +67,7 @@ FROM customers
 GROUP BY loyalty_program, order_frequency
 ORDER BY customers DESC;
 
--- ===== INTERMEDIATE =====
--- Q7: Day-of-week ordering pattern
+-- Q7: Day-of-week ordering pattern ==> Intermediate-friendly
 SELECT
     CAST(strftime('%w', order_date) AS INTEGER) AS dow_number,
     CASE CAST(strftime('%w', order_date) AS INTEGER)
@@ -95,7 +83,7 @@ FROM orders
 GROUP BY dow_number
 ORDER BY dow_number;
 
--- Q8: Monthly trend with month-over-month growth
+-- Q8: Monthly trend with month-over-month growth ==> Intermediate-friendly
 SELECT
     strftime('%Y-%m', order_date) AS month, COUNT(*) AS orders,
     ROUND(SUM(order_value), 2) AS revenue,
@@ -106,7 +94,7 @@ FROM orders
 GROUP BY month
 ORDER BY month;
 
--- Q9: Restaurant league table
+-- Q9: Restaurant league table ==> Intermediate-friendly
 WITH stats AS (
     SELECT
         o.restaurant_id, COUNT(*) AS orders, ROUND(SUM(o.order_value), 2) AS revenue,
@@ -125,7 +113,7 @@ FROM stats
 ORDER BY revenue_rank
 LIMIT 30;
 
--- Q10: Does distance predict delay?
+-- Q10: Does distance predict delay? ==> Intermediate-friendly
 SELECT
     CASE
         WHEN delivery_distance_km < 5 THEN '2-5 km'
@@ -144,7 +132,7 @@ FROM orders
 GROUP BY distance_band
 ORDER BY MIN(delivery_distance_km);
 
--- Q11: Weather and traffic interaction
+-- Q11: Weather and traffic interaction ==> Intermediate-friendly
 SELECT
     weather_condition, traffic_condition, COUNT(*) AS orders,
     ROUND(AVG(delivery_delay_min), 3) AS avg_delay_min,
@@ -154,7 +142,7 @@ FROM orders
 GROUP BY weather_condition, traffic_condition
 ORDER BY avg_delay_min DESC;
 
--- Q12: Do customers order the cuisine they say they prefer?
+-- Q12: Do customers order the cuisine they say they prefer? ==> Intermediate-friendly
 SELECT
     c.preferred_cuisine, COUNT(*) AS orders,
     COUNT(DISTINCT o.food_item) AS distinct_items_ordered,
@@ -166,7 +154,7 @@ JOIN order_quality q ON o.order_id = q.order_id
 GROUP BY c.preferred_cuisine
 ORDER BY orders DESC;
 
--- Q13: Route efficiency and delivery method
+-- Q13: Route efficiency and delivery method ==> Intermediate-friendly
 WITH bucketed AS (
     SELECT
         delivery_method, route_type, traffic_avoidance, delivery_delay_min, route_efficiency,
@@ -181,7 +169,7 @@ FROM bucketed
 GROUP BY efficiency_quartile, delivery_method
 ORDER BY efficiency_quartile, delivery_method;
 
--- Q14: Quality scores versus satisfaction
+-- Q14: Quality scores versus satisfaction ==> Intermediate-friendly
 SELECT
     q.food_freshness, COUNT(*) AS orders,
     ROUND(AVG(q.customer_satisfaction), 3) AS avg_satisfaction,
@@ -193,8 +181,7 @@ JOIN orders o ON q.order_id = o.order_id
 GROUP BY q.food_freshness
 ORDER BY q.food_freshness;
 
--- ===== ADVANCED =====
--- Q15: Restaurant performance scorecard
+-- Q15: Restaurant performance scorecard ==> Advanced-friendly
 WITH base AS (
     SELECT
         o.restaurant_id, COUNT(*) AS orders, AVG(o.order_value) AS avg_value,
@@ -230,7 +217,7 @@ SELECT
 FROM scored
 ORDER BY composite_score DESC;
 
--- Q16: SIGNAL TEST - does any factor explain delivery delay?
+-- Q16: SIGNAL TEST - does any factor explain delivery delay? ==> Advanced-friendly
 WITH overall AS (
     SELECT sqrt( (SUM(delivery_delay_min*delivery_delay_min)
                   - SUM(delivery_delay_min)*SUM(delivery_delay_min)/COUNT(*))
@@ -265,7 +252,7 @@ FROM factor f CROSS JOIN overall o
 GROUP BY f.factor, o.sd_all
 ORDER BY effect_size DESC;
 
--- Q17: SIGNAL TEST - what drives customer satisfaction?
+-- Q17: SIGNAL TEST - what drives customer satisfaction? ==> Advanced-friendly
 WITH levels AS (
     SELECT 'customer_rating' AS dimension, customer_rating AS level, AVG(customer_satisfaction) AS mean_sat, COUNT(*) AS n FROM order_quality GROUP BY customer_rating
     UNION ALL
@@ -287,7 +274,7 @@ FROM levels
 GROUP BY dimension
 ORDER BY total_lift DESC;
 
--- Q18: SIGNAL TEST - is the loyalty programme worth anything?
+-- Q18: SIGNAL TEST - is the loyalty programme worth anything? ==> Advanced-friendly
 WITH grp AS (
     SELECT
         c.loyalty_program, COUNT(*) AS customers, AVG(o.order_value) AS mean_value,
@@ -309,7 +296,7 @@ SELECT
 FROM grp
 ORDER BY loyalty_program;
 
--- Q19: Market share by city
+-- Q19: Market share by city ==> Advanced-friendly
 WITH city_rest AS (
     SELECT
         c.location AS city, o.restaurant_id, COUNT(*) AS orders,
@@ -336,7 +323,7 @@ FROM ranked
 WHERE rank_in_city <= 5
 ORDER BY city, rank_in_city;
 
--- Q20: Operational summary by city and weekday
+-- Q20: Operational summary by city and weekday ==> Advanced-friendly
 WITH detail AS (
     SELECT
         c.location AS city,
@@ -368,8 +355,7 @@ SELECT city, day_name, orders, revenue, avg_delay, avg_satisfaction
 FROM combined
 ORDER BY city, sort_key, day_name;
 
--- ===== EXTENDED =====
--- Q21: Route shape versus delivery outcome
+-- Q21: Route shape versus delivery outcome ==> Extended-friendly
 SELECT
     CASE WHEN is_small_route = 1 THEN 'Short route' ELSE 'Long route' END AS route_length,
     CASE WHEN is_bike_friendly_route = 1 THEN 'Bike friendly' ELSE 'Not bike friendly' END AS bike_access,

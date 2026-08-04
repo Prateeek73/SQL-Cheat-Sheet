@@ -1,12 +1,4 @@
-/* PROJECT 2: TELECOM CHURN | db/project_2_churn.db | 20 queries
-   Kaggle: blastchar/telco-customer-churn (7,043 customers, 26.54% churned)
-   customers 7,043x12 | services 7,043x7 | billing 7,043x3 | churn 7,043x3
-   raw_wa_fn_usec_telco_customer_churn = untouched source (21 cols).
-   Caveats - no churn_date/churn_reason exist, derived_signup_month is
-   back-calculated, total_charges is blank for 11 rows: docs/DATA_NOTES.md */
-
--- ===== BEGINNER =====
--- Q1: Overall churn rate
+-- Q1: Overall churn rate ==> Beginner-friendly
 SELECT
     COUNT(*) AS total_customers,
     SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,
@@ -14,7 +6,7 @@ SELECT
     ROUND(100.0 * SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct
 FROM churn;
 
--- Q2: Churn by contract type
+-- Q2: Churn by contract type ==> Beginner-friendly
 SELECT
     c.contract_type, COUNT(*) AS customers,
     SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,
@@ -24,7 +16,7 @@ JOIN churn ch ON c.customer_id = ch.customer_id
 GROUP BY c.contract_type
 ORDER BY churn_rate_pct DESC;
 
--- Q3: Tenure of churned vs retained customers
+-- Q3: Tenure of churned vs retained customers ==> Beginner-friendly
 SELECT
     ch.churn_status, COUNT(*) AS customers,
     ROUND(AVG(c.tenure_months), 1) AS avg_tenure_months,
@@ -35,7 +27,7 @@ JOIN churn ch ON c.customer_id = ch.customer_id
 JOIN billing b ON c.customer_id = b.customer_id
 GROUP BY ch.churn_status;
 
--- Q4: Churn by internet service type
+-- Q4: Churn by internet service type ==> Beginner-friendly
 SELECT
     c.internet_service, COUNT(*) AS customers,
     SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,
@@ -47,7 +39,7 @@ JOIN billing b ON c.customer_id = b.customer_id
 GROUP BY c.internet_service
 ORDER BY churn_rate_pct DESC;
 
--- Q5: Churn by payment method
+-- Q5: Churn by payment method ==> Beginner-friendly
 SELECT
     c.payment_method, COUNT(*) AS customers,
     SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,
@@ -58,7 +50,7 @@ JOIN churn ch ON c.customer_id = ch.customer_id
 GROUP BY c.payment_method
 ORDER BY churn_rate_pct DESC;
 
--- Q6: Churn by tenure bucket
+-- Q6: Churn by tenure bucket ==> Beginner-friendly
 SELECT
     CASE
         WHEN c.tenure_months <= 6 THEN '0-6 months'
@@ -75,8 +67,7 @@ JOIN churn ch ON c.customer_id = ch.customer_id
 GROUP BY tenure_bucket
 ORDER BY MIN(c.tenure_months);
 
--- ===== INTERMEDIATE =====
--- Q7: Churn by derived signup cohort
+-- Q7: Churn by derived signup cohort ==> Intermediate-friendly
 SELECT
     ch.derived_signup_month AS signup_cohort, COUNT(*) AS cohort_size,
     SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,
@@ -88,7 +79,7 @@ GROUP BY ch.derived_signup_month
 HAVING COUNT(*) >= 20
 ORDER BY signup_cohort;
 
--- Q8: Retention curve by tenure month
+-- Q8: Retention curve by tenure month ==> Intermediate-friendly
 WITH by_tenure AS (
     SELECT c.tenure_months,
            COUNT(*) AS customers,
@@ -108,7 +99,7 @@ SELECT
 FROM by_tenure
 ORDER BY tenure_months;
 
--- Q9: Highest-risk demographic combinations
+-- Q9: Highest-risk demographic combinations ==> Intermediate-friendly
 SELECT
     CASE WHEN c.senior_citizen = 1 THEN 'Senior' ELSE 'Non-senior' END AS age_group,
     c.partner AS has_partner, c.dependents AS has_dependents, COUNT(*) AS group_size,
@@ -122,7 +113,7 @@ GROUP BY age_group, c.partner, c.dependents
 HAVING COUNT(*) >= 100
 ORDER BY risk_rank;
 
--- Q10: Price sensitivity - churn by monthly-charge quartile
+-- Q10: Price sensitivity - churn by monthly-charge quartile ==> Intermediate-friendly
 WITH tiers AS (
     SELECT b.customer_id, b.monthly_charges, ch.churn_status,
            NTILE(4) OVER (ORDER BY b.monthly_charges) AS charge_quartile
@@ -138,7 +129,7 @@ FROM tiers
 GROUP BY charge_quartile
 ORDER BY charge_quartile;
 
--- Q11: Does bundling more services reduce churn?
+-- Q11: Does bundling more services reduce churn? ==> Intermediate-friendly
 WITH bundles AS (
     SELECT
         s.customer_id, ch.churn_status,
@@ -159,7 +150,7 @@ FROM bundles
 GROUP BY service_count
 ORDER BY service_count;
 
--- Q12: Early-warning signal count
+-- Q12: Early-warning signal count ==> Intermediate-friendly
 WITH signals AS (
     SELECT
         c.customer_id, c.tenure_months, c.contract_type, b.monthly_charges,
@@ -184,7 +175,7 @@ FROM signals
 GROUP BY signal_count
 ORDER BY signal_count;
 
--- Q13: Which individual service most reduces churn?
+-- Q13: Which individual service most reduces churn? ==> Intermediate-friendly
 WITH sa AS (
     SELECT s.*, ch.churn_status
     FROM services s JOIN churn ch ON s.customer_id = ch.customer_id
@@ -226,7 +217,7 @@ SELECT 'Streaming movies',
 FROM sa
 ORDER BY churn_rate_pct;
 
--- Q14: Contract effectiveness scorecard
+-- Q14: Contract effectiveness scorecard ==> Intermediate-friendly
 SELECT
     c.contract_type, COUNT(*) AS customers,
     ROUND(100.0 * SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct,
@@ -240,8 +231,7 @@ JOIN billing b ON c.customer_id = b.customer_id
 GROUP BY c.contract_type
 ORDER BY churn_rate_pct;
 
--- ===== ADVANCED =====
--- Q15: Revenue impact of churn
+-- Q15: Revenue impact of churn ==> Advanced-friendly
 WITH base AS (
     SELECT
         c.customer_id, c.contract_type, c.tenure_months,
@@ -274,7 +264,7 @@ FROM valued
 GROUP BY churn_status
 ORDER BY churn_status;
 
--- Q16: Weighted churn risk score (0-100) for still-active customers
+-- Q16: Weighted churn risk score (0-100) for still-active customers ==> Advanced-friendly
 WITH p75 AS (
     SELECT monthly_charges AS threshold
     FROM (
@@ -314,7 +304,7 @@ WHERE churn_status = 'No'
 ORDER BY raw_score DESC, annual_revenue_at_risk DESC
 LIMIT 250;
 
--- Q17: Cohort retention waterfall
+-- Q17: Cohort retention waterfall ==> Advanced-friendly
 WITH cohort AS (
     SELECT
         ch.derived_signup_month AS cohort_month, c.tenure_months,
@@ -334,7 +324,7 @@ GROUP BY cohort_month
 HAVING COUNT(*) >= 20
 ORDER BY cohort_month;
 
--- Q18: Charge distribution percentiles, churned vs retained
+-- Q18: Charge distribution percentiles, churned vs retained ==> Advanced-friendly
 WITH ranked AS (
     SELECT
         ch.churn_status, b.monthly_charges,
@@ -355,7 +345,7 @@ FROM ranked
 GROUP BY churn_status, n
 ORDER BY churn_status;
 
--- Q19: Retention programme ROI
+-- Q19: Retention programme ROI ==> Advanced-friendly
 WITH facts AS (
     SELECT
         SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,
@@ -383,7 +373,7 @@ SELECT
     ROUND((revenue_recovered - programme_cost) / NULLIF(programme_cost, 0), 1) AS roi_multiple
 FROM model;
 
--- Q20: Segmented retention strategy
+-- Q20: Segmented retention strategy ==> Advanced-friendly
 WITH segmented AS (
     SELECT
         CASE

@@ -1,15 +1,4 @@
-/* PROJECT 5: CREDIT CARD FRAUD | db/project_5_fraud.db | 25 queries
-   Kaggle: mlg-ulb/creditcardfraud (284,807 rows, 492 frauds = 0.1727%)
-   transactions 284,807x34 (all 28 PCA components v1..v28)
-   transaction_features 7,974,596x4 (long format, one row per component)
-   raw_creditcard = untouched source (31 cols).
-   V1-V28 are PCA components with NO business meaning - there is no merchant,
-   customer, card or city in this data. At a 0.17% base rate accuracy is
-   useless, so these queries report precision/recall only.
-   Feature rankings and rule performance: docs/DATA_NOTES.md */
-
--- ===== BEGINNER =====
--- Q1: Fraud overview and class imbalance
+-- Q1: Fraud overview and class imbalance ==> Beginner-friendly
 SELECT
     COUNT(*) AS total_transactions, SUM(is_fraud) AS fraud_count, COUNT(*) - SUM(is_fraud) AS legitimate_count,
     ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct,
@@ -18,7 +7,7 @@ SELECT
     ROUND(SUM(amount), 2) AS total_volume
 FROM transactions;
 
--- Q2: Fraud rate by hour of day
+-- Q2: Fraud rate by hour of day ==> Beginner-friendly
 SELECT
     hour_of_day, COUNT(*) AS transactions, SUM(is_fraud) AS frauds,
     ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct,
@@ -29,7 +18,7 @@ FROM transactions
 GROUP BY hour_of_day
 ORDER BY fraud_rate_pct DESC;
 
--- Q3: Largest transactions
+-- Q3: Largest transactions ==> Beginner-friendly
 SELECT
     transaction_id, ROUND(amount, 2) AS amount, hour_of_day, day_number, is_fraud,
     CASE WHEN is_fraud = 1 THEN 'FRAUD' ELSE 'legitimate' END AS label
@@ -37,7 +26,7 @@ FROM transactions
 ORDER BY amount DESC
 LIMIT 50;
 
--- Q4: Amount profile of fraud vs legitimate
+-- Q4: Amount profile of fraud vs legitimate ==> Beginner-friendly
 SELECT
     CASE WHEN is_fraud = 1 THEN 'Fraud' ELSE 'Legitimate' END AS class,
     COUNT(*) AS transactions, ROUND(AVG(amount), 2) AS avg_amount,
@@ -47,7 +36,7 @@ SELECT
 FROM transactions
 GROUP BY is_fraud;
 
--- Q5: Zero-amount transactions (card testing)
+-- Q5: Zero-amount transactions (card testing) ==> Beginner-friendly
 SELECT
     COUNT(*) AS zero_amount_txns, SUM(is_fraud) AS frauds_among_them,
     ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct,
@@ -56,7 +45,7 @@ SELECT
 FROM transactions
 WHERE amount = 0;
 
--- Q6: Volume and fraud by day
+-- Q6: Volume and fraud by day ==> Beginner-friendly
 SELECT
     day_number, COUNT(*) AS transactions, SUM(is_fraud) AS frauds,
     ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct, ROUND(SUM(amount), 2) AS volume,
@@ -64,8 +53,7 @@ SELECT
 FROM transactions
 GROUP BY day_number;
 
--- ===== INTERMEDIATE =====
--- Q7: Amount outliers by z-score
+-- Q7: Amount outliers by z-score ==> Intermediate-friendly
 WITH stats AS (
     SELECT AVG(amount) AS mean_amt,
            sqrt( (SUM(amount*amount) - SUM(amount)*SUM(amount)/COUNT(*)) / NULLIF(COUNT(*)-1,0) ) AS sd_amt
@@ -79,7 +67,7 @@ WHERE ABS((t.amount - s.mean_amt) / NULLIF(s.sd_amt, 0)) > 5
 ORDER BY z_score DESC
 LIMIT 100;
 
--- Q8: Fraud rate by amount band
+-- Q8: Fraud rate by amount band ==> Intermediate-friendly
 SELECT
     CASE WHEN amount = 0 THEN 'a. Zero'
         WHEN amount < 10 THEN 'b. Under 10'
@@ -97,7 +85,7 @@ FROM transactions
 GROUP BY amount_band
 ORDER BY amount_band;
 
--- Q9: How well do the PCA features separate the classes?
+-- Q9: How well do the PCA features separate the classes? ==> Intermediate-friendly
 WITH s AS (
     SELECT
         AVG(CASE WHEN is_fraud = 0 THEN v14 END) AS v14_legit, AVG(CASE WHEN is_fraud = 1 THEN v14 END) AS v14_fraud,
@@ -115,7 +103,7 @@ UNION ALL SELECT 'V10', ROUND(v10_legit,4), ROUND(v10_fraud,4), ROUND(ABS(v10_fr
 UNION ALL SELECT 'Amount', ROUND(amt_legit,4), ROUND(amt_fraud,4), ROUND(ABS(amt_fraud - amt_legit),4) FROM s
 ORDER BY separation DESC;
 
--- Q10: Transaction velocity in a rolling window
+-- Q10: Transaction velocity in a rolling window ==> Intermediate-friendly
 WITH seq AS (
     SELECT
         transaction_id, seconds_elapsed, amount, is_fraud, hour_of_day,
@@ -131,7 +119,7 @@ WHERE txns_last_60s > 20
 ORDER BY txns_last_60s DESC
 LIMIT 100;
 
--- Q11: Amount percentiles by class
+-- Q11: Amount percentiles by class ==> Intermediate-friendly
 WITH ranked AS (
     SELECT
         is_fraud, amount, ROW_NUMBER() OVER (PARTITION BY is_fraud ORDER BY amount) AS rn,
@@ -151,7 +139,7 @@ FROM ranked
 GROUP BY is_fraud, n
 ORDER BY is_fraud;
 
--- Q12: Fraud concentration matrix - hour against amount band
+-- Q12: Fraud concentration matrix - hour against amount band ==> Intermediate-friendly
 SELECT
     CASE WHEN hour_of_day BETWEEN 0 AND 5 THEN '00-05 (overnight)'
          WHEN hour_of_day BETWEEN 6 AND 11 THEN '06-11 (morning)'
@@ -169,7 +157,7 @@ GROUP BY time_block, amount_band
 HAVING COUNT(*) >= 100
 ORDER BY lift DESC;
 
--- Q13: Where should the V14 cut-off go?
+-- Q13: Where should the V14 cut-off go? ==> Intermediate-friendly
 SELECT
     CASE WHEN v14 < -10 THEN 'a. below -10'
         WHEN v14 < -8 THEN 'b. -10 to -8'
@@ -185,7 +173,7 @@ FROM transactions
 GROUP BY v14_band
 ORDER BY v14_band;
 
--- Q14: Cumulative fraud capture by risk ranking
+-- Q14: Cumulative fraud capture by risk ranking ==> Intermediate-friendly
 WITH ranked AS (
     SELECT is_fraud, amount, v14,
            NTILE(100) OVER (ORDER BY v14) AS risk_percentile
@@ -211,8 +199,7 @@ FROM per_bucket
 ORDER BY risk_percentile
 LIMIT 20;
 
--- ===== ADVANCED =====
--- Q15: Precision, recall and F1 for candidate rules
+-- Q15: Precision, recall and F1 for candidate rules ==> Advanced-friendly
 WITH rules AS (
     SELECT 'amount > 1000' AS rule, CASE WHEN amount > 1000 THEN 1 ELSE 0 END AS flag, is_fraud FROM transactions
     UNION ALL SELECT 'amount > 200', CASE WHEN amount > 200 THEN 1 ELSE 0 END, is_fraud FROM transactions
@@ -239,7 +226,7 @@ SELECT
 FROM matrix
 ORDER BY f1_score DESC;
 
--- Q16: Composite risk score
+-- Q16: Composite risk score ==> Advanced-friendly
 WITH scored AS (
     SELECT
         transaction_id, amount, hour_of_day, v14, v17, v12, is_fraud,
@@ -269,7 +256,7 @@ FROM tiered
 GROUP BY risk_tier
 ORDER BY risk_tier;
 
--- Q17: Threshold sweep (a gains / ROC-style curve)
+-- Q17: Threshold sweep (a gains / ROC-style curve) ==> Advanced-friendly
 WITH thresholds(cut) AS (
     VALUES (-12.0), (-10.0), (-8.0), (-6.0), (-5.0), (-4.0), (-3.0), (-2.0), (-1.0), (0.0)
 ),
@@ -290,7 +277,7 @@ SELECT
 FROM swept
 ORDER BY cut;
 
--- Q18: Confusion matrix at the chosen operating point
+-- Q18: Confusion matrix at the chosen operating point ==> Advanced-friendly
 WITH applied AS (
     SELECT
         CASE WHEN v14 < -4 AND v17 < -3 THEN 1 ELSE 0 END AS predicted_fraud,
@@ -318,7 +305,7 @@ SELECT
     ROUND(100.0 * value_caught / NULLIF(value_caught + value_missed, 0), 2) AS pct_value_prevented
 FROM cm;
 
--- Q19: Cost-benefit of running the rule
+-- Q19: Cost-benefit of running the rule ==> Advanced-friendly
 WITH assumptions AS (
     SELECT 25.0 AS review_cost_per_alert, -- analyst time per flagged txn
            0.85 AS recovery_rate, -- share of caught fraud actually recovered
@@ -347,7 +334,7 @@ SELECT
          THEN 'Deploy - positive return' ELSE 'Do not deploy - costs exceed recovery' END AS recommendation
 FROM outcome o CROSS JOIN assumptions a;
 
--- Q20: ML-ready feature export
+-- Q20: ML-ready feature export ==> Advanced-friendly
 WITH stats AS (
     SELECT AVG(amount) AS mean_amt,
            sqrt( (SUM(amount*amount) - SUM(amount)*SUM(amount)/COUNT(*)) / NULLIF(COUNT(*)-1,0) ) AS sd_amt
@@ -375,8 +362,7 @@ WHERE t.is_fraud = 1
 ORDER BY t.is_fraud DESC, risk_flag_count DESC
 LIMIT 5000;
 
--- ===== EXTENDED =====
--- Q21: Rank ALL 28 components by class separation
+-- Q21: Rank ALL 28 components by class separation ==> Extended-friendly
 WITH stats AS (
     SELECT
         feature, AVG(CASE WHEN is_fraud = 0 THEN value END) AS legit_mean,
@@ -398,7 +384,7 @@ SELECT
 FROM stats
 ORDER BY effect_size DESC;
 
--- Q22: Which components separate cleanly, and which merely look different?
+-- Q22: Which components separate cleanly, and which merely look different? ==> Extended-friendly
 WITH ranked AS (
     SELECT feature, value, is_fraud,
            ROW_NUMBER() OVER (PARTITION BY feature, is_fraud ORDER BY value) AS rn,
@@ -423,7 +409,7 @@ FROM pct l
 JOIN pct f ON l.feature = f.feature AND l.is_fraud = 0 AND f.is_fraud = 1
 ORDER BY median_gap DESC;
 
--- Q23: Rules built from the features the data chose, not the famous ones
+-- Q23: Rules built from the features the data chose, not the famous ones ==> Extended-friendly
 WITH rules AS (
     SELECT 'V14<-4 AND V17<-4' AS rule, CASE WHEN v14 < -4 AND v17 < -4 THEN 1 ELSE 0 END AS flag, is_fraud FROM transactions
     UNION ALL SELECT 'V3<-4 AND V14<-4', CASE WHEN v3 < -4 AND v14 < -4 THEN 1 ELSE 0 END, is_fraud FROM transactions
@@ -455,7 +441,7 @@ SELECT
 FROM m
 ORDER BY f1_score DESC;
 
--- Q24: Full-width profile of every confirmed fraud
+-- Q24: Full-width profile of every confirmed fraud ==> Extended-friendly
 SELECT
     transaction_id, seconds_elapsed, hour_of_day, day_number, amount,
     ROUND(v1,3) AS v1, ROUND(v2,3) AS v2, ROUND(v3,3) AS v3, ROUND(v4,3) AS v4, ROUND(v5,3) AS v5,
@@ -469,7 +455,7 @@ FROM transactions
 WHERE is_fraud = 1
 ORDER BY amount DESC;
 
--- Q25: ML export using every component
+-- Q25: ML export using every component ==> Extended-friendly
 WITH s AS (
     SELECT AVG(amount) AS mean_amt,
            sqrt( (SUM(amount*amount) - SUM(amount)*SUM(amount)/COUNT(*)) / NULLIF(COUNT(*)-1,0) ) AS sd_amt

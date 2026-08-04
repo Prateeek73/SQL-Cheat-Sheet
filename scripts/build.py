@@ -125,6 +125,12 @@ def main() -> int:
                     for name in made:
                         n = conn.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
                         print(f"    + derived {name:28s} {human(n):>10s} rows")
+                # CTAS drops constraints, so declare the real keys afterwards
+                if hasattr(derive, "apply_keys"):
+                    npk, nfk = derive.apply_keys(conn, project)
+                    orphans = conn.execute("PRAGMA foreign_key_check").fetchall()
+                    flag = f"  [{len(orphans)} FK VIOLATIONS]" if orphans else ""
+                    print(f"    + keys      {npk} primary, {nfk} foreign{flag}")
             conn.commit()
             conn.execute("PRAGMA optimize")
             conn.commit()

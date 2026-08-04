@@ -427,3 +427,89 @@ RECIPES = {
     "project_4_food": food,
     "project_5_fraud": fraud,
 }
+
+# ---------------------------------------------------------------- constraints
+# CREATE TABLE ... AS SELECT silently drops every constraint, so the derived
+# tables above start with no primary or foreign keys at all. These are declared
+# afterwards by rebuilding each table with real DDL.
+#
+# Only relationships with verified full integrity are declared. Notably
+# order_lines.sku -> products.sku is NOT here: 7,706 sale lines reference a SKU
+# absent from the catalogue (the join runs at 94%), so the constraint would be a
+# lie. That gap is real and the queries handle it with a LEFT JOIN.
+#
+# table -> (primary key, [(column, parent table, parent column), ...])
+KEYS: dict[str, dict[str, tuple[str | None, list[tuple[str, str, str]]]]] = {
+    "project_1_ecommerce": {
+        "products":       ("sku", []),
+        "orders":         ("order_id", []),
+        "order_lines":    ("line_id", [("order_id", "orders", "order_id")]),
+        "intl_customers": ("customer_name", []),
+        "intl_sales":     ("sale_id", [("customer", "intl_customers", "customer_name")]),
+        "pricing":        ("sku", []),
+        "channel_prices": (None, [("sku", "pricing", "sku")]),
+    },
+    "project_2_churn": {
+        "customers": ("customer_id", []),
+        "services":  ("customer_id", [("customer_id", "customers", "customer_id")]),
+        "billing":   ("customer_id", [("customer_id", "customers", "customer_id")]),
+        "churn":     ("customer_id", [("customer_id", "customers", "customer_id")]),
+    },
+    "project_3_hr": {
+        "departments": ("department_name", []),
+        "employees":   ("employee_id", [("department", "departments", "department_name")]),
+        "performance": ("employee_id", [("employee_id", "employees", "employee_id")]),
+    },
+    "project_4_food": {
+        "customers":     ("customer_id", []),
+        "restaurants":   ("restaurant_id", []),
+        "orders":        ("order_id", [("customer_id", "customers", "customer_id"),
+                                       ("restaurant_id", "restaurants", "restaurant_id")]),
+        "order_quality": ("order_id", [("order_id", "orders", "order_id")]),
+    },
+    "project_5_fraud": {
+        "transactions":         ("transaction_id", []),
+        "transaction_features": (None, [("transaction_id", "transactions", "transaction_id")]),
+    },
+}
+
+
+def apply_keys(conn: sqlite3.Connection, project: str) -> tuple[int, int]:
+    """Rebuild each derived table with a real PRIMARY KEY and FOREIGN KEYs.
+
+    Uses SQLite's documented table-rebuild procedure: foreign keys off, create
+    the replacement, copy, drop, rename, then replay the indexes (dropping a
+    table drops its indexes too). legacy_alter_table keeps the RENAME from
+    rewriting other tables' references.
+    """
+    spec = KEYS.get(project, {})
+    npk = nfk = 0
+    conn.execute("PRAGMA foreign_keys = OFF")
+    conn.execute("PRAGMA legacy_alter_table = ON")
+    for table, (pk, fks) in spec.items():
+        cols = [(r[1], r[2] or "") for r in conn.execute(f'PRAGMA table_info("{table}")')]
+        if not cols:
+            continue
+        idx = [r[0] for r in conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL",
+            (table,))]
+        defs = [f'"{c}" {t}'.strip() for c, t in cols]
+        if pk:
+            defs.append(f'PRIMARY KEY ("{pk}")'); npk += 1
+        for col, ptab, pcol in fks:
+            defs.append(f'FOREIGN KEY ("{col}") REFERENCES "{ptab}"("{pcol}")'); nfk += 1
+        collist = ", ".join(f'"{c}"' for c, _ in cols)
+        conn.executescript(
+            f'CREATE TABLE "{table}__new" ({", ".join(defs)});'
+            f'INSERT INTO "{table}__new" ({collist}) SELECT {collist} FROM "{table}";'
+            f'DROP TABLE "{table}";'
+            f'ALTER TABLE "{table}__new" RENAME TO "{table}";')
+        for stmt in idx:
+            try:
+                conn.execute(stmt)
+            except sqlite3.OperationalError:
+                pass          # a UNIQUE index the PRIMARY KEY now supersedes
+    conn.execute("PRAGMA legacy_alter_table = OFF")
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.commit()
+    return npk, nfk

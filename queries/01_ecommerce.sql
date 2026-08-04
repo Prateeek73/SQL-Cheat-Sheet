@@ -1,14 +1,4 @@
-/* PROJECT 1: E-COMMERCE | db/project_1_ecommerce.db | 26 queries
-   Kaggle: thedevastator/unlock-profits-with-e-commerce-sales-data
-   order_lines 128,975x25 | orders 120,378 | products 9,170 | geography 9,148
-   pricing 1,330x18 | channel_prices 10,640 | intl_sales 36,392
-   intl_customers 172 | warehouse_rates 20 | expenses 14
-   raw_* = untouched source CSVs (all 7 files loaded).
-   Caveats - NULL amounts, cancellations, the promotion artifact, and the
-   price list that does not join: docs/DATA_NOTES.md */
-
--- ===== BEGINNER =====
--- Q1: Headline sales figures
+-- Q1: Headline sales figures ==> Beginner-friendly
 SELECT
     COUNT(*) AS sale_lines, COUNT(DISTINCT order_id) AS orders,
     ROUND(SUM(amount), 2) AS total_revenue, ROUND(AVG(amount), 2) AS avg_line_value,
@@ -17,7 +7,7 @@ FROM order_lines
 WHERE status <> 'Cancelled'
   AND amount IS NOT NULL;
 
--- Q2: Revenue by product category
+-- Q2: Revenue by product category ==> Beginner-friendly
 SELECT
     category, COUNT(*) AS sale_lines, SUM(qty) AS units, ROUND(SUM(amount), 2) AS revenue,
     ROUND(AVG(amount), 2) AS avg_line_value,
@@ -29,7 +19,7 @@ WHERE status <> 'Cancelled' AND amount IS NOT NULL
 GROUP BY category
 ORDER BY revenue DESC;
 
--- Q3: Top 10 SKUs by revenue, enriched from the catalogue
+-- Q3: Top 10 SKUs by revenue, enriched from the catalogue ==> Beginner-friendly
 SELECT
     ol.sku, p.design_no, p.product_category, p.color, SUM(ol.qty) AS units_sold,
     ROUND(SUM(ol.amount), 2) AS revenue,
@@ -41,7 +31,7 @@ GROUP BY ol.sku, p.design_no, p.product_category, p.color, p.stock
 ORDER BY revenue DESC
 LIMIT 10;
 
--- Q4: Where the orders ship to
+-- Q4: Where the orders ship to ==> Beginner-friendly
 SELECT
     ship_state, COUNT(DISTINCT order_id) AS orders, ROUND(SUM(amount), 2) AS revenue,
     ROUND(AVG(amount), 2) AS avg_line_value
@@ -51,7 +41,7 @@ GROUP BY ship_state
 HAVING COUNT(DISTINCT order_id) >= 100
 ORDER BY revenue DESC;
 
--- Q5: Daily revenue trend
+-- Q5: Daily revenue trend ==> Beginner-friendly
 SELECT
     order_date, strftime('%Y-%m', order_date) AS month, COUNT(DISTINCT order_id) AS orders,
     ROUND(SUM(amount), 2) AS revenue
@@ -60,7 +50,7 @@ WHERE status <> 'Cancelled' AND amount IS NOT NULL
 GROUP BY order_date
 ORDER BY order_date;
 
--- Q6: Order status breakdown
+-- Q6: Order status breakdown ==> Beginner-friendly
 SELECT
     status, COUNT(*) AS lines,
     ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM order_lines), 2) AS pct_of_lines,
@@ -77,8 +67,7 @@ FROM order_lines
 GROUP BY status
 ORDER BY lines DESC;
 
--- ===== INTERMEDIATE =====
--- Q7: Month-over-month revenue growth
+-- Q7: Month-over-month revenue growth ==> Intermediate-friendly
 SELECT
     strftime('%Y-%m', order_date) AS month, ROUND(SUM(amount), 2) AS revenue,
     ROUND(LAG(SUM(amount)) OVER (ORDER BY strftime('%Y-%m', order_date)), 2) AS prev_month,
@@ -89,7 +78,7 @@ WHERE status <> 'Cancelled' AND amount IS NOT NULL
 GROUP BY strftime('%Y-%m', order_date)
 ORDER BY month;
 
--- Q8: Rank products within their catalogue category
+-- Q8: Rank products within their catalogue category ==> Intermediate-friendly
 SELECT
     p.product_category, ol.sku, p.color, ROUND(SUM(ol.amount), 2) AS revenue,
     DENSE_RANK() OVER (PARTITION BY p.product_category
@@ -100,7 +89,7 @@ WHERE ol.status <> 'Cancelled' AND ol.amount IS NOT NULL
 GROUP BY p.product_category, ol.sku, p.color
 ORDER BY p.product_category, rank_in_category;
 
--- Q9: Cumulative revenue (running total)
+-- Q9: Cumulative revenue (running total) ==> Intermediate-friendly
 SELECT
     order_date, ROUND(SUM(amount), 2) AS daily_revenue,
     ROUND(SUM(SUM(amount)) OVER (ORDER BY order_date
@@ -110,7 +99,7 @@ WHERE status <> 'Cancelled' AND amount IS NOT NULL
 GROUP BY order_date
 ORDER BY order_date;
 
--- Q10: Cities whose average order beats the site-wide average
+-- Q10: Cities whose average order beats the site-wide average ==> Intermediate-friendly
 SELECT
     ship_city, COUNT(DISTINCT order_id) AS orders, ROUND(AVG(amount), 2) AS avg_line_value,
     ROUND(SUM(amount), 2) AS revenue
@@ -122,7 +111,7 @@ HAVING COUNT(DISTINCT order_id) >= 50
                       WHERE status <> 'Cancelled' AND amount IS NOT NULL)
 ORDER BY avg_line_value DESC;
 
--- Q11: Top 3 SKUs in every category
+-- Q11: Top 3 SKUs in every category ==> Intermediate-friendly
 WITH ranked AS (
     SELECT
         p.product_category, ol.sku, ROUND(SUM(ol.amount), 2) AS revenue,
@@ -138,7 +127,7 @@ FROM ranked
 WHERE rn <= 3
 ORDER BY product_category, rn;
 
--- Q12: Order-value distribution
+-- Q12: Order-value distribution ==> Intermediate-friendly
 SELECT
     order_id, order_amount,
     ROUND(100 * PERCENT_RANK() OVER (ORDER BY order_amount), 2) AS percentile,
@@ -154,7 +143,7 @@ WHERE order_amount IS NOT NULL AND status <> 'Cancelled'
 ORDER BY order_amount DESC
 LIMIT 200;
 
--- Q13: Low stock against recent demand
+-- Q13: Low stock against recent demand ==> Intermediate-friendly
 SELECT
     p.sku, p.product_category, p.color, p.stock,
     COALESCE(SUM(ol.qty), 0) AS units_sold_in_window,
@@ -167,7 +156,7 @@ GROUP BY p.sku, p.product_category, p.color, p.stock
 ORDER BY windows_of_cover IS NULL, windows_of_cover
 LIMIT 100;
 
--- Q14: International customer value
+-- Q14: International customer value ==> Intermediate-friendly
 SELECT
     ic.customer_name, ic.sale_lines, ic.lifetime_value,
     ROUND(ic.lifetime_value / NULLIF(ic.sale_lines, 0), 2) AS avg_line_value,
@@ -179,8 +168,7 @@ GROUP BY ic.customer_name, ic.sale_lines, ic.lifetime_value
 ORDER BY ic.lifetime_value DESC
 LIMIT 25;
 
--- ===== ADVANCED =====
--- Q15: Monthly cohorts of international customers
+-- Q15: Monthly cohorts of international customers ==> Advanced-friendly
 WITH sales AS (
     SELECT customer,
            '20' || substr(raw_date, 7, 2) || '-' || substr(raw_date, 1, 2) AS ym,
@@ -213,7 +201,7 @@ JOIN cohort_size cs ON a.cohort_month = cs.cohort_month
 GROUP BY a.cohort_month, a.active_month, cs.cohort_customers
 ORDER BY a.cohort_month, a.active_month;
 
--- Q16: RFM segmentation of international customers
+-- Q16: RFM segmentation of international customers ==> Advanced-friendly
 WITH base AS (
     SELECT customer,
            MAX('20'||substr(raw_date,7,2)||'-'||substr(raw_date,1,2)||'-'||substr(raw_date,4,2)) AS last_purchase,
@@ -245,7 +233,7 @@ SELECT
 FROM scored
 ORDER BY monetary DESC;
 
--- Q17: Categories bought together in the same order
+-- Q17: Categories bought together in the same order ==> Advanced-friendly
 SELECT
     a.category AS category_a, b.category AS category_b,
     COUNT(DISTINCT a.order_id) AS orders_with_both,
@@ -260,7 +248,7 @@ GROUP BY a.category, b.category
 HAVING COUNT(DISTINCT a.order_id) >= 5
 ORDER BY orders_with_both DESC;
 
--- Q18: Outlier order values by category (z-score)
+-- Q18: Outlier order values by category (z-score) ==> Advanced-friendly
 WITH stats AS (
     SELECT category,
            COUNT(*) AS n, AVG(amount) AS mean_amount,
@@ -286,7 +274,7 @@ WHERE ol.status <> 'Cancelled' AND ol.amount IS NOT NULL
 ORDER BY ABS((ol.amount - s.mean_amount) / NULLIF(s.sd_amount, 0)) DESC
 LIMIT 100;
 
--- Q19: Market basket rules - support, confidence, lift
+-- Q19: Market basket rules - support, confidence, lift ==> Advanced-friendly
 WITH multi AS (
     SELECT order_id FROM orders WHERE line_count > 1
 ),
@@ -320,7 +308,7 @@ CROSS JOIN total t
 WHERE p.both_cnt >= 5
 ORDER BY lift DESC;
 
--- Q20: Cancellation risk scorecard by segment
+-- Q20: Cancellation risk scorecard by segment ==> Advanced-friendly
 WITH segment AS (
     SELECT
         category, fulfilment,
@@ -361,8 +349,7 @@ SELECT
 FROM scored
 ORDER BY risk_score DESC;
 
--- ===== EXTENDED =====
--- Q21: Promotions - and a lesson in not trusting the obvious read
+-- Q21: Promotions - and a lesson in not trusting the obvious read ==> Extended-friendly
 SELECT
     status, COUNT(*) AS lines, SUM(has_promotion) AS promoted_lines,
     ROUND(100.0 * SUM(has_promotion) / COUNT(*), 1) AS pct_carrying_promo_id,
@@ -374,7 +361,7 @@ FROM order_lines
 GROUP BY status
 ORDER BY lines DESC;
 
--- Q22: Price dispersion across the nine marketplaces
+-- Q22: Price dispersion across the nine marketplaces ==> Extended-friendly
 WITH per_sku AS (
     SELECT sku, price_category, cost_price,
            COUNT(list_price) AS channels_listed, MIN(list_price) AS cheapest,
@@ -398,7 +385,7 @@ WHERE channels_listed >= 2
 ORDER BY spread_pct DESC
 LIMIT 100;
 
--- Q23: Gross margin against list price, by channel
+-- Q23: Gross margin against list price, by channel ==> Extended-friendly
 SELECT
     channel, COUNT(*) AS skus_listed, ROUND(AVG(cost_price), 2) AS avg_cost,
     ROUND(AVG(list_price), 2) AS avg_list_price,
@@ -411,7 +398,7 @@ WHERE list_price IS NOT NULL AND cost_price IS NOT NULL
 GROUP BY channel
 ORDER BY avg_margin_pct DESC;
 
--- Q24: Catalogue margin profile by category
+-- Q24: Catalogue margin profile by category ==> Extended-friendly
 WITH m AS (
     SELECT price_category, catalog, sku, weight_kg,
            cost_price, cost_price_2021_a, cost_price_2021_b,
@@ -433,7 +420,7 @@ FROM m
 GROUP BY price_category
 ORDER BY avg_margin_pct DESC;
 
--- Q25: Full-width order line detail
+-- Q25: Full-width order line detail ==> Extended-friendly
 SELECT
     ol.line_id, ol.order_id, ol.order_date, ol.status, ol.courier_status,
     ol.fulfilment, ol.sales_channel, ol.ship_service_level,
@@ -450,7 +437,7 @@ WHERE ol.amount IS NOT NULL
 ORDER BY ol.amount DESC
 LIMIT 200;
 
--- Q26: Geography, warehouse rates and the expense ledger
+-- Q26: Geography, warehouse rates and the expense ledger ==> Extended-friendly
 WITH top_geo AS (
     SELECT g.state,
            COUNT(DISTINCT g.city) AS cities_served, SUM(g.line_count) AS lines_from_geo_dim,

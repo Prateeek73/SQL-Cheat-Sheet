@@ -1,12 +1,4 @@
-/* PROJECT 3: HR PERFORMANCE | db/project_3_hr.db | 21 queries
-   Kaggle: nadeemajeedch/employee-performance-and-salary-dataset
-   employees 1,000x11 | performance 502x2 | departments 3x3
-   raw_employe_performance_dataset = untouched source (12 cols).
-   Caveats - performance_score missing for 498 of 1,000, no promotions or
-   attendance data, dates anchor to MAX(joining_date): docs/DATA_NOTES.md */
-
--- ===== BEGINNER =====
--- Q1: Salary statistics by department
+-- Q1: Salary statistics by department ==> Beginner-friendly
 SELECT
     department, COUNT(*) AS headcount, ROUND(AVG(salary), 2) AS avg_salary,
     MIN(salary) AS min_salary, MAX(salary) AS max_salary,
@@ -16,7 +8,7 @@ FROM employees
 GROUP BY department
 ORDER BY avg_salary DESC;
 
--- Q2: Headcount and performance coverage by department
+-- Q2: Headcount and performance coverage by department ==> Beginner-friendly
 SELECT
     e.department, COUNT(*) AS employees, COUNT(p.performance_score) AS with_score,
     COUNT(*) - COUNT(p.performance_score) AS missing_score,
@@ -27,7 +19,7 @@ LEFT JOIN performance p ON e.employee_id = p.employee_id
 GROUP BY e.department
 ORDER BY e.department;
 
--- Q3: Most recent hires
+-- Q3: Most recent hires ==> Beginner-friendly
 SELECT
     employee_id, employee_name, department, location, joining_date, salary, experience_years,
     CAST(julianday((SELECT MAX(joining_date) FROM employees))
@@ -36,7 +28,7 @@ FROM employees
 WHERE joining_date >= date((SELECT MAX(joining_date) FROM employees), '-12 months')
 ORDER BY joining_date DESC;
 
--- Q4: Salary by location and shift session
+-- Q4: Salary by location and shift session ==> Beginner-friendly
 SELECT
     location, session, COUNT(*) AS headcount, ROUND(AVG(salary), 2) AS avg_salary,
     MIN(salary) AS min_salary, MAX(salary) AS max_salary,
@@ -46,7 +38,7 @@ GROUP BY location, session
 HAVING COUNT(*) >= 3
 ORDER BY avg_salary DESC;
 
--- Q5: Active vs inactive workforce
+-- Q5: Active vs inactive workforce ==> Beginner-friendly
 SELECT
     department, COUNT(*) AS total,
     SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS active,
@@ -58,7 +50,7 @@ FROM employees
 GROUP BY department
 ORDER BY attrition_rate_pct DESC;
 
--- Q6: Age distribution
+-- Q6: Age distribution ==> Beginner-friendly
 SELECT
     CASE
         WHEN age < 30 THEN '20-29'
@@ -73,8 +65,7 @@ FROM employees
 GROUP BY age_band
 ORDER BY MIN(age);
 
--- ===== INTERMEDIATE =====
--- Q7: Salary rank within department
+-- Q7: Salary rank within department ==> Intermediate-friendly
 SELECT
     employee_id, employee_name, department, salary,
     RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS salary_rank,
@@ -84,7 +75,7 @@ SELECT
 FROM employees
 ORDER BY department, salary_rank;
 
--- Q8: Top 3 performers per department
+-- Q8: Top 3 performers per department ==> Intermediate-friendly
 WITH ranked AS (
     SELECT
         e.employee_id, e.employee_name, e.department, e.salary,
@@ -100,7 +91,7 @@ FROM ranked
 WHERE rn <= 3
 ORDER BY department, rn;
 
--- Q9: Salary percentiles and quartiles
+-- Q9: Salary percentiles and quartiles ==> Intermediate-friendly
 SELECT
     employee_id, employee_name, department, salary,
     ROUND(100 * PERCENT_RANK() OVER (ORDER BY salary), 2) AS salary_percentile,
@@ -115,7 +106,7 @@ FROM employees
 ORDER BY salary DESC
 LIMIT 100;
 
--- Q10: Tenure derived from joining_date
+-- Q10: Tenure derived from joining_date ==> Intermediate-friendly
 SELECT
     employee_id, employee_name, department, joining_date, experience_years,
     CAST(julianday((SELECT MAX(joining_date) FROM employees))
@@ -130,7 +121,7 @@ FROM employees
 ORDER BY tenure_days DESC
 LIMIT 100;
 
--- Q11: Does experience translate into pay?
+-- Q11: Does experience translate into pay? ==> Intermediate-friendly
 WITH bands AS (
     SELECT
         CASE
@@ -153,7 +144,7 @@ SELECT
 FROM bands
 ORDER BY band_floor;
 
--- Q12: Salary outliers within department (z-score)
+-- Q12: Salary outliers within department (z-score) ==> Intermediate-friendly
 WITH stats AS (
     SELECT department,
            AVG(salary) AS mean_salary,
@@ -176,7 +167,7 @@ JOIN stats s ON e.department = s.department
 WHERE ABS((e.salary - s.mean_salary) / NULLIF(s.sd_salary, 0)) > 1.5
 ORDER BY ABS((e.salary - s.mean_salary) / NULLIF(s.sd_salary, 0)) DESC;
 
--- Q13: Attrition by tenure and department
+-- Q13: Attrition by tenure and department ==> Intermediate-friendly
 WITH tenure AS (
     SELECT
         department, status, salary,
@@ -199,7 +190,7 @@ GROUP BY tenure_band, department
 HAVING COUNT(*) >= 10
 ORDER BY attrition_pct DESC;
 
--- Q14: Is pay aligned with performance?
+-- Q14: Is pay aligned with performance? ==> Intermediate-friendly
 SELECT
     COALESCE(CAST(p.performance_score AS TEXT), 'No score on file') AS performance_score,
     COUNT(*) AS employees, ROUND(AVG(e.salary), 2) AS avg_salary, MIN(e.salary) AS min_salary,
@@ -211,8 +202,7 @@ LEFT JOIN performance p ON e.employee_id = p.employee_id
 GROUP BY p.performance_score
 ORDER BY (p.performance_score IS NULL), p.performance_score;
 
--- ===== ADVANCED =====
--- Q15: Pay equity by gender within department
+-- Q15: Pay equity by gender within department ==> Advanced-friendly
 WITH cell AS (
     SELECT department, gender,
            COUNT(*) AS employees, ROUND(AVG(salary), 2) AS avg_salary,
@@ -241,7 +231,7 @@ JOIN dept_base d ON c.department = d.department
 WHERE c.employees >= 20
 ORDER BY c.department, c.avg_salary DESC;
 
--- Q16: Compensation bands from real percentiles
+-- Q16: Compensation bands from real percentiles ==> Advanced-friendly
 WITH ranked AS (
     SELECT department, salary,
            ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary) AS rn,
@@ -262,7 +252,7 @@ FROM ranked
 GROUP BY department, n
 ORDER BY median DESC;
 
--- Q17: Is the missing performance data random?
+-- Q17: Is the missing performance data random? ==> Advanced-friendly
 WITH flagged AS (
     SELECT e.*,
            CASE WHEN p.employee_id IS NULL THEN 'Missing score' ELSE 'Has score' END AS score_status
@@ -281,7 +271,7 @@ SELECT
 FROM flagged
 GROUP BY score_status;
 
--- Q18: Attrition risk score
+-- Q18: Attrition risk score ==> Advanced-friendly
 WITH dept_stats AS (
     SELECT department, AVG(salary) AS dept_avg FROM employees GROUP BY department
 ),
@@ -326,7 +316,7 @@ WHERE raw_score >= 20
 ORDER BY raw_score DESC, salary
 LIMIT 200;
 
--- Q19: Department balanced scorecard
+-- Q19: Department balanced scorecard ==> Advanced-friendly
 WITH metrics AS (
     SELECT
         e.department, COUNT(*) AS headcount, ROUND(AVG(e.salary), 2) AS avg_salary,
@@ -354,7 +344,7 @@ SELECT
 FROM scored
 ORDER BY overall_score DESC;
 
--- Q20: Five-year salary projection
+-- Q20: Five-year salary projection ==> Advanced-friendly
 WITH rates AS (
     SELECT
         e.employee_id, e.employee_name, e.department, e.salary,
@@ -390,7 +380,7 @@ FROM projected
 ORDER BY total_increase_5yr DESC
 LIMIT 200;
 
--- Q21: Employees against the department dimension
+-- Q21: Employees against the department dimension ==> Extended-friendly
 SELECT
     d.department_name, d.headcount AS dim_headcount, d.avg_salary AS dim_avg_salary,
     COUNT(e.employee_id) AS live_headcount, ROUND(AVG(e.salary), 2) AS live_avg_salary,
