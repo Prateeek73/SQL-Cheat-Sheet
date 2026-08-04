@@ -1,0 +1,857 @@
+{
+  "generatedAt": "2026-08-03T21:01:10Z",
+  "repo": "Prateeek73/SQL-Cheat-Sheet",
+  "projects": [
+    {
+      "id": "ecommerce",
+      "slug": "ecommerce",
+      "title": "E-Commerce Sales",
+      "database": "project_1_ecommerce.db",
+      "rows": 128975,
+      "source": "thedevastator/unlock-profits-with-e-commerce-sales-data",
+      "sqlFile": "queries/01_ecommerce.sql",
+      "questionCount": 26,
+      "questions": [
+        {
+          "number": 1,
+          "title": "Headline sales figures",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    COUNT(*) AS sale_lines, COUNT(DISTINCT order_id) AS orders,\n    ROUND(SUM(amount), 2) AS total_revenue, ROUND(AVG(amount), 2) AS avg_line_value,\n    SUM(qty) AS units_sold\nFROM order_lines\nWHERE status <> 'Cancelled'\n  AND amount IS NOT NULL;"
+        },
+        {
+          "number": 2,
+          "title": "Revenue by product category",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    category, COUNT(*) AS sale_lines, SUM(qty) AS units, ROUND(SUM(amount), 2) AS revenue,\n    ROUND(AVG(amount), 2) AS avg_line_value,\n    ROUND(100.0 * SUM(amount) / (\n        SELECT SUM(amount) FROM order_lines\n        WHERE status <> 'Cancelled' AND amount IS NOT NULL), 2) AS pct_of_revenue\nFROM order_lines\nWHERE status <> 'Cancelled' AND amount IS NOT NULL\nGROUP BY category\nORDER BY revenue DESC;"
+        },
+        {
+          "number": 3,
+          "title": "Top 10 SKUs by revenue, enriched from the catalogue",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    ol.sku, p.design_no, p.product_category, p.color, SUM(ol.qty) AS units_sold,\n    ROUND(SUM(ol.amount), 2) AS revenue,\n    p.stock AS stock_on_hand\nFROM order_lines ol\nINNER JOIN products p ON ol.sku = p.sku\nWHERE ol.status <> 'Cancelled' AND ol.amount IS NOT NULL\nGROUP BY ol.sku, p.design_no, p.product_category, p.color, p.stock\nORDER BY revenue DESC\nLIMIT 10;"
+        },
+        {
+          "number": 4,
+          "title": "Where the orders ship to",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    ship_state, COUNT(DISTINCT order_id) AS orders, ROUND(SUM(amount), 2) AS revenue,\n    ROUND(AVG(amount), 2) AS avg_line_value\nFROM order_lines\nWHERE status <> 'Cancelled' AND amount IS NOT NULL\nGROUP BY ship_state\nHAVING COUNT(DISTINCT order_id) >= 100\nORDER BY revenue DESC;"
+        },
+        {
+          "number": 5,
+          "title": "Daily revenue trend",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    order_date, strftime('%Y-%m', order_date) AS month, COUNT(DISTINCT order_id) AS orders,\n    ROUND(SUM(amount), 2) AS revenue\nFROM order_lines\nWHERE status <> 'Cancelled' AND amount IS NOT NULL\nGROUP BY order_date\nORDER BY order_date;"
+        },
+        {
+          "number": 6,
+          "title": "Order status breakdown",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    status, COUNT(*) AS lines,\n    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM order_lines), 2) AS pct_of_lines,\n    CASE\n        WHEN status = 'Cancelled' THEN 'Lost'\n        WHEN status LIKE '%Returned%'\n          OR status LIKE '%Returning%'\n          OR status LIKE '%Rejected%' THEN 'Returned'\n        WHEN status LIKE 'Pending%'\n          OR status = 'Shipping' THEN 'In flight'\n        ELSE 'Fulfilled'\n    END AS outcome\nFROM order_lines\nGROUP BY status\nORDER BY lines DESC;"
+        },
+        {
+          "number": 7,
+          "title": "Month-over-month revenue growth",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    strftime('%Y-%m', order_date) AS month, ROUND(SUM(amount), 2) AS revenue,\n    ROUND(LAG(SUM(amount)) OVER (ORDER BY strftime('%Y-%m', order_date)), 2) AS prev_month,\n    ROUND(100.0 * (SUM(amount) - LAG(SUM(amount)) OVER (ORDER BY strftime('%Y-%m', order_date)))\n          / NULLIF(LAG(SUM(amount)) OVER (ORDER BY strftime('%Y-%m', order_date)), 0), 2) AS growth_pct\nFROM order_lines\nWHERE status <> 'Cancelled' AND amount IS NOT NULL\nGROUP BY strftime('%Y-%m', order_date)\nORDER BY month;"
+        },
+        {
+          "number": 8,
+          "title": "Rank products within their catalogue category",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    p.product_category, ol.sku, p.color, ROUND(SUM(ol.amount), 2) AS revenue,\n    DENSE_RANK() OVER (PARTITION BY p.product_category\n                       ORDER BY SUM(ol.amount) DESC) AS rank_in_category\nFROM order_lines ol\nINNER JOIN products p ON ol.sku = p.sku\nWHERE ol.status <> 'Cancelled' AND ol.amount IS NOT NULL\nGROUP BY p.product_category, ol.sku, p.color\nORDER BY p.product_category, rank_in_category;"
+        },
+        {
+          "number": 9,
+          "title": "Cumulative revenue (running total)",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    order_date, ROUND(SUM(amount), 2) AS daily_revenue,\n    ROUND(SUM(SUM(amount)) OVER (ORDER BY order_date\n          ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS cumulative_revenue\nFROM order_lines\nWHERE status <> 'Cancelled' AND amount IS NOT NULL\nGROUP BY order_date\nORDER BY order_date;"
+        },
+        {
+          "number": 10,
+          "title": "Cities whose average order beats the site-wide average",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    ship_city, COUNT(DISTINCT order_id) AS orders, ROUND(AVG(amount), 2) AS avg_line_value,\n    ROUND(SUM(amount), 2) AS revenue\nFROM order_lines\nWHERE status <> 'Cancelled' AND amount IS NOT NULL\nGROUP BY ship_city\nHAVING COUNT(DISTINCT order_id) >= 50\n   AND AVG(amount) > (SELECT AVG(amount) FROM order_lines\n                      WHERE status <> 'Cancelled' AND amount IS NOT NULL)\nORDER BY avg_line_value DESC;"
+        },
+        {
+          "number": 11,
+          "title": "Top 3 SKUs in every category",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH ranked AS (\n    SELECT\n        p.product_category, ol.sku, ROUND(SUM(ol.amount), 2) AS revenue,\n        ROW_NUMBER() OVER (PARTITION BY p.product_category\n                           ORDER BY SUM(ol.amount) DESC) AS rn\n    FROM order_lines ol\n    INNER JOIN products p ON ol.sku = p.sku\n    WHERE ol.status <> 'Cancelled' AND ol.amount IS NOT NULL\n    GROUP BY p.product_category, ol.sku\n)\nSELECT product_category, sku, revenue, rn AS rank_in_category\nFROM ranked\nWHERE rn <= 3\nORDER BY product_category, rn;"
+        },
+        {
+          "number": 12,
+          "title": "Order-value distribution",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    order_id, order_amount,\n    ROUND(100 * PERCENT_RANK() OVER (ORDER BY order_amount), 2) AS percentile,\n    NTILE(4) OVER (ORDER BY order_amount) AS quartile,\n    CASE NTILE(4) OVER (ORDER BY order_amount)\n        WHEN 4 THEN 'Top 25%'\n        WHEN 3 THEN 'Upper mid'\n        WHEN 2 THEN 'Lower mid'\n        ELSE 'Bottom 25%'\n    END AS value_tier\nFROM orders\nWHERE order_amount IS NOT NULL AND status <> 'Cancelled'\nORDER BY order_amount DESC\nLIMIT 200;"
+        },
+        {
+          "number": 13,
+          "title": "Low stock against recent demand",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    p.sku, p.product_category, p.color, p.stock,\n    COALESCE(SUM(ol.qty), 0) AS units_sold_in_window,\n    ROUND(p.stock * 1.0 / NULLIF(SUM(ol.qty), 0), 1) AS windows_of_cover\nFROM products p\nLEFT JOIN order_lines ol\n       ON p.sku = ol.sku AND ol.status <> 'Cancelled'\nWHERE p.stock IS NOT NULL AND p.stock < 20\nGROUP BY p.sku, p.product_category, p.color, p.stock\nORDER BY windows_of_cover IS NULL, windows_of_cover\nLIMIT 100;"
+        },
+        {
+          "number": 14,
+          "title": "International customer value",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    ic.customer_name, ic.sale_lines, ic.lifetime_value,\n    ROUND(ic.lifetime_value / NULLIF(ic.sale_lines, 0), 2) AS avg_line_value,\n    COUNT(DISTINCT s.sku) AS distinct_skus,\n    ROUND(SUM(s.pcs), 0) AS total_pieces\nFROM intl_customers ic\nJOIN intl_sales s ON s.customer = ic.customer_name\nGROUP BY ic.customer_name, ic.sale_lines, ic.lifetime_value\nORDER BY ic.lifetime_value DESC\nLIMIT 25;"
+        },
+        {
+          "number": 15,
+          "title": "Monthly cohorts of international customers",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH sales AS (\n    SELECT customer,\n           '20' || substr(raw_date, 7, 2) || '-' || substr(raw_date, 1, 2) AS ym,\n           gross_amt\n    FROM intl_sales\n    WHERE length(trim(raw_date)) = 8 AND gross_amt IS NOT NULL\n),\nfirst_month AS (\n    SELECT customer, MIN(ym) AS cohort_month\n    FROM sales GROUP BY customer\n),\nactivity AS (\n    SELECT f.cohort_month, s.ym AS active_month, s.customer, s.gross_amt\n    FROM sales s JOIN first_month f ON s.customer = f.customer\n),\ncohort_size AS (\n    SELECT cohort_month, COUNT(DISTINCT customer) AS cohort_customers\n    FROM first_month GROUP BY cohort_month\n)\nSELECT\n    a.cohort_month, a.active_month,\n    (CAST(substr(a.active_month,1,4) AS INTEGER) - CAST(substr(a.cohort_month,1,4) AS INTEGER)) * 12\n      + (CAST(substr(a.active_month,6,2) AS INTEGER) - CAST(substr(a.cohort_month,6,2) AS INTEGER))\n AS months_since_first, cs.cohort_customers,\n    COUNT(DISTINCT a.customer) AS active_customers,\n    ROUND(100.0 * COUNT(DISTINCT a.customer) / cs.cohort_customers, 1) AS retention_pct,\n    ROUND(SUM(a.gross_amt), 2) AS revenue\nFROM activity a\nJOIN cohort_size cs ON a.cohort_month = cs.cohort_month\nGROUP BY a.cohort_month, a.active_month, cs.cohort_customers\nORDER BY a.cohort_month, a.active_month;"
+        },
+        {
+          "number": 16,
+          "title": "RFM segmentation of international customers",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH base AS (\n    SELECT customer,\n           MAX('20'||substr(raw_date,7,2)||'-'||substr(raw_date,1,2)||'-'||substr(raw_date,4,2)) AS last_purchase,\n           COUNT(*) AS frequency,\n           SUM(gross_amt) AS monetary\n    FROM intl_sales\n    WHERE length(trim(raw_date)) = 8 AND gross_amt IS NOT NULL\n    GROUP BY customer\n),\nscored AS (\n    SELECT customer, last_purchase, frequency, monetary,\n           CAST(julianday((SELECT MAX(last_purchase) FROM base)) - julianday(last_purchase) AS INTEGER) AS recency_days,\n           NTILE(4) OVER (ORDER BY julianday(last_purchase)) AS r_score,\n           NTILE(4) OVER (ORDER BY frequency) AS f_score,\n           NTILE(4) OVER (ORDER BY monetary) AS m_score\n    FROM base\n)\nSELECT\n    customer, recency_days, frequency, ROUND(monetary, 2) AS monetary,\n    r_score, f_score, m_score,\n    (r_score || f_score || m_score) AS rfm_cell,\n    CASE\n        WHEN r_score >= 3 AND f_score >= 3 AND m_score >= 3 THEN 'Champion'\n        WHEN r_score >= 3 AND f_score >= 2 THEN 'Loyal'\n        WHEN r_score >= 3 THEN 'Promising'\n        WHEN f_score >= 3 OR m_score >= 3 THEN 'At risk - valuable'\n        ELSE 'Lapsed'\n    END AS segment\nFROM scored\nORDER BY monetary DESC;"
+        },
+        {
+          "number": 17,
+          "title": "Categories bought together in the same order",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "SELECT\n    a.category AS category_a, b.category AS category_b,\n    COUNT(DISTINCT a.order_id) AS orders_with_both,\n    ROUND(100.0 * COUNT(DISTINCT a.order_id) /\n          (SELECT COUNT(*) FROM orders WHERE line_count > 1), 2) AS pct_of_multiline_orders\nFROM order_lines a\nJOIN order_lines b\n  ON a.order_id = b.order_id\n AND a.category < b.category\nWHERE a.status <> 'Cancelled' AND b.status <> 'Cancelled'\nGROUP BY a.category, b.category\nHAVING COUNT(DISTINCT a.order_id) >= 5\nORDER BY orders_with_both DESC;"
+        },
+        {
+          "number": 18,
+          "title": "Outlier order values by category (z-score)",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH stats AS (\n    SELECT category,\n           COUNT(*) AS n, AVG(amount) AS mean_amount,\n           sqrt( (SUM(amount * amount) - SUM(amount) * SUM(amount) / COUNT(*))\n                 / NULLIF(COUNT(*) - 1, 0) ) AS sd_amount\n    FROM order_lines\n    WHERE status <> 'Cancelled' AND amount IS NOT NULL\n    GROUP BY category\n)\nSELECT\n    ol.order_id, ol.order_date, ol.category, ol.sku, ROUND(ol.amount, 2) AS amount,\n    ROUND(s.mean_amount, 2) AS category_mean, ROUND(s.sd_amount, 2) AS category_sd,\n    ROUND((ol.amount - s.mean_amount) / NULLIF(s.sd_amount, 0), 2) AS z_score,\n    CASE\n        WHEN ABS((ol.amount - s.mean_amount) / NULLIF(s.sd_amount, 0)) > 4 THEN 'Extreme'\n        WHEN ABS((ol.amount - s.mean_amount) / NULLIF(s.sd_amount, 0)) > 3 THEN 'Significant'\n        ELSE 'Moderate'\n    END AS outlier_class\nFROM order_lines ol\nJOIN stats s ON ol.category = s.category\nWHERE ol.status <> 'Cancelled' AND ol.amount IS NOT NULL\n  AND ABS((ol.amount - s.mean_amount) / NULLIF(s.sd_amount, 0)) > 3\nORDER BY ABS((ol.amount - s.mean_amount) / NULLIF(s.sd_amount, 0)) DESC\nLIMIT 100;"
+        },
+        {
+          "number": 19,
+          "title": "Market basket rules - support, confidence, lift",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH multi AS (\n    SELECT order_id FROM orders WHERE line_count > 1\n),\nbasket AS (\n    SELECT DISTINCT ol.order_id, ol.category\n    FROM order_lines ol\n    JOIN multi m ON ol.order_id = m.order_id\n    WHERE ol.status <> 'Cancelled'\n),\ntotal AS (SELECT COUNT(*) AS n_orders FROM multi),\nitem AS (\n    SELECT category, COUNT(*) AS cnt FROM basket GROUP BY category\n),\npair AS (\n    SELECT a.category AS cat_a, b.category AS cat_b, COUNT(*) AS both_cnt\n    FROM basket a\n    JOIN basket b ON a.order_id = b.order_id AND a.category < b.category\n    GROUP BY a.category, b.category\n)\nSELECT\n    p.cat_a, p.cat_b, p.both_cnt,\n    ROUND(100.0 * p.both_cnt / t.n_orders, 3) AS support_pct,\n    ROUND(100.0 * p.both_cnt / ia.cnt, 2) AS confidence_a_to_b,\n    ROUND(100.0 * p.both_cnt / ib.cnt, 2) AS confidence_b_to_a,\n    ROUND( (1.0 * p.both_cnt / t.n_orders) /\n           NULLIF((1.0 * ia.cnt / t.n_orders) * (1.0 * ib.cnt / t.n_orders), 0), 2) AS lift\nFROM pair p\nJOIN item ia ON p.cat_a = ia.category\nJOIN item ib ON p.cat_b = ib.category\nCROSS JOIN total t\nWHERE p.both_cnt >= 5\nORDER BY lift DESC;"
+        },
+        {
+          "number": 20,
+          "title": "Cancellation risk scorecard by segment",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH segment AS (\n    SELECT\n        category, fulfilment,\n        CASE WHEN b2b = 1 THEN 'B2B' ELSE 'B2C' END AS channel,\n        COUNT(*) AS lines,\n        SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled,\n        SUM(CASE WHEN status LIKE '%Returned%'\n                   OR status LIKE '%Returning%'\n                   OR status LIKE '%Rejected%' THEN 1 ELSE 0 END) AS returned,\n        ROUND(AVG(CASE WHEN amount IS NOT NULL THEN amount END), 2) AS avg_value\n    FROM order_lines\n    GROUP BY category, fulfilment, channel\n),\nscored AS (\n    SELECT *,\n        ROUND(100.0 * cancelled / NULLIF(lines, 0), 2) AS cancel_rate,\n        ROUND(100.0 * returned / NULLIF(lines, 0), 2) AS return_rate,\n        ROUND(100.0 * cancelled / NULLIF(lines, 0)\n            + 2 * 100.0 * returned / NULLIF(lines, 0), 2) AS risk_score\n    FROM segment\n    WHERE lines >= 100\n)\nSELECT\n    category, fulfilment, channel, lines, avg_value,\n    cancel_rate, return_rate, risk_score,\n    CASE\n        WHEN risk_score >= 30 THEN 'Critical'\n        WHEN risk_score >= 20 THEN 'High'\n        WHEN risk_score >= 12 THEN 'Watch'\n        ELSE 'Healthy'\n    END AS risk_tier,\n    CASE\n        WHEN return_rate > 3 THEN 'Investigate sizing / product photos'\n        WHEN cancel_rate > 25 THEN 'Review stock accuracy and lead time'\n        WHEN cancel_rate > 15 THEN 'Monitor fulfilment SLA'\n        ELSE 'No action'\n    END AS recommended_action\nFROM scored\nORDER BY risk_score DESC;"
+        },
+        {
+          "number": 21,
+          "title": "Promotions - and a lesson in not trusting the obvious read",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "SELECT\n    status, COUNT(*) AS lines, SUM(has_promotion) AS promoted_lines,\n    ROUND(100.0 * SUM(has_promotion) / COUNT(*), 1) AS pct_carrying_promo_id,\n    ROUND(AVG(promotion_count), 2) AS avg_promos_applied,\n    ROUND(AVG(CASE WHEN has_promotion = 1 THEN amount END), 2) AS avg_value_promoted,\n    ROUND(AVG(CASE WHEN has_promotion = 0 THEN amount END), 2) AS avg_value_unpromoted,\n    ROUND(100.0 * SUM(CASE WHEN b2b = 1 THEN 1 ELSE 0 END) / COUNT(*), 2) AS b2b_pct\nFROM order_lines\nGROUP BY status\nORDER BY lines DESC;"
+        },
+        {
+          "number": 22,
+          "title": "Price dispersion across the nine marketplaces",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "WITH per_sku AS (\n    SELECT sku, price_category, cost_price,\n           COUNT(list_price) AS channels_listed, MIN(list_price) AS cheapest,\n           MAX(list_price) AS dearest,\n           ROUND(AVG(list_price), 2) AS avg_price\n    FROM channel_prices\n    WHERE list_price IS NOT NULL\n    GROUP BY sku, price_category, cost_price\n)\nSELECT\n    sku, price_category, channels_listed, cost_price, cheapest, dearest, avg_price,\n    ROUND(dearest - cheapest, 2) AS price_spread,\n    ROUND(100.0 * (dearest - cheapest) / NULLIF(cheapest, 0), 1) AS spread_pct,\n    CASE\n        WHEN 100.0 * (dearest - cheapest) / NULLIF(cheapest, 0) > 20 THEN 'Inconsistent - review'\n        WHEN 100.0 * (dearest - cheapest) / NULLIF(cheapest, 0) > 5 THEN 'Minor variance'\n        ELSE 'Aligned'\n    END AS pricing_status\nFROM per_sku\nWHERE channels_listed >= 2\nORDER BY spread_pct DESC\nLIMIT 100;"
+        },
+        {
+          "number": 23,
+          "title": "Gross margin against list price, by channel",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "SELECT\n    channel, COUNT(*) AS skus_listed, ROUND(AVG(cost_price), 2) AS avg_cost,\n    ROUND(AVG(list_price), 2) AS avg_list_price,\n    ROUND(AVG(list_price - cost_price), 2) AS avg_gross_margin,\n    ROUND(100.0 * AVG((list_price - cost_price) / NULLIF(list_price, 0)), 2) AS avg_margin_pct,\n    ROUND(MIN((list_price - cost_price) / NULLIF(list_price, 0)) * 100, 1) AS worst_margin_pct,\n    SUM(CASE WHEN list_price < cost_price THEN 1 ELSE 0 END) AS skus_priced_below_cost\nFROM channel_prices\nWHERE list_price IS NOT NULL AND cost_price IS NOT NULL\nGROUP BY channel\nORDER BY avg_margin_pct DESC;"
+        },
+        {
+          "number": 24,
+          "title": "Catalogue margin profile by category",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "WITH m AS (\n    SELECT price_category, catalog, sku, weight_kg,\n           cost_price, cost_price_2021_a, cost_price_2021_b,\n           final_mrp_old, amazon_mrp, amazon_mrp - cost_price AS margin_value,\n           100.0 * (amazon_mrp - cost_price) / NULLIF(amazon_mrp, 0) AS margin_pct\n    FROM pricing\n    WHERE cost_price IS NOT NULL AND amazon_mrp IS NOT NULL\n)\nSELECT\n    price_category, COUNT(*) AS skus, COUNT(DISTINCT catalog) AS catalogs,\n    ROUND(AVG(weight_kg), 3) AS avg_weight_kg, ROUND(AVG(cost_price), 2) AS avg_cost_2022,\n    ROUND(AVG(cost_price_2021_a), 2) AS avg_cost_2021_base,\n    ROUND(AVG(cost_price_2021_b), 2) AS avg_cost_2021_alt,\n    ROUND(AVG(amazon_mrp), 2) AS avg_amazon_price,\n    ROUND(AVG(margin_value), 2) AS avg_margin_value,\n    ROUND(AVG(margin_pct), 2) AS avg_margin_pct, ROUND(MIN(margin_pct), 1) AS min_margin_pct,\n    ROUND(MAX(margin_pct), 1) AS max_margin_pct\nFROM m\nGROUP BY price_category\nORDER BY avg_margin_pct DESC;"
+        },
+        {
+          "number": 25,
+          "title": "Full-width order line detail",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "SELECT\n    ol.line_id, ol.order_id, ol.order_date, ol.status, ol.courier_status,\n    ol.fulfilment, ol.sales_channel, ol.ship_service_level,\n    ol.style, ol.sku, ol.asin, ol.category, ol.size,\n    ol.qty, ol.amount, ol.currency,\n    ol.ship_city, ol.ship_state, ol.ship_postal_code, ol.ship_country,\n    ol.b2b, ol.has_promotion, ol.promotion_count, p.design_no, p.color, p.stock,\n    ROUND(ol.amount / NULLIF(ol.qty, 0), 2) AS unit_price\nFROM order_lines ol\nLEFT JOIN products p ON ol.sku = p.sku\nWHERE ol.amount IS NOT NULL\n  AND ol.status <> 'Cancelled'\n  AND ol.has_promotion = 1\nORDER BY ol.amount DESC\nLIMIT 200;"
+        },
+        {
+          "number": 26,
+          "title": "Geography, warehouse rates and the expense ledger",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "WITH top_geo AS (\n    SELECT g.state,\n           COUNT(DISTINCT g.city) AS cities_served, SUM(g.line_count) AS lines_from_geo_dim,\n           ROUND(SUM(ol.amount), 2) AS revenue\n    FROM geography g\n    JOIN order_lines ol\n      ON ol.ship_city = g.city AND ol.ship_state = g.state\n    WHERE ol.status <> 'Cancelled' AND ol.amount IS NOT NULL\n    GROUP BY g.state\n)\nSELECT 'geography' AS source,\n       state AS item, cities_served AS metric_a,\n       revenue AS metric_b\nFROM top_geo\nWHERE revenue IS NOT NULL\nUNION ALL\nSELECT 'warehouse_rates', line_item, NULL,\n       CASE WHEN trim(increff_rate) GLOB '[0-9]*' THEN CAST(increff_rate AS REAL) END\nFROM warehouse_rates\nUNION ALL\nSELECT 'expenses', expense_item, NULL, amount\nFROM expenses\nORDER BY source, metric_b DESC NULLS LAST;"
+        }
+      ]
+    },
+    {
+      "id": "churn",
+      "slug": "churn",
+      "title": "Churn",
+      "database": "project_2_churn.db",
+      "rows": 7043,
+      "source": "thedevastator/telecom-customer-churn",
+      "sqlFile": "queries/02_churn.sql",
+      "questionCount": 20,
+      "questions": [
+        {
+          "number": 1,
+          "title": "Overall churn rate",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    COUNT(*) AS total_customers,\n    SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    SUM(CASE WHEN churn_status = 'No' THEN 1 ELSE 0 END) AS retained,\n    ROUND(100.0 * SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct\nFROM churn;"
+        },
+        {
+          "number": 2,
+          "title": "Churn by contract type",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    c.contract_type, COUNT(*) AS customers,\n    SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct\nFROM customers c\nJOIN churn ch ON c.customer_id = ch.customer_id\nGROUP BY c.contract_type\nORDER BY churn_rate_pct DESC;"
+        },
+        {
+          "number": 3,
+          "title": "Tenure of churned vs retained customers",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    ch.churn_status, COUNT(*) AS customers,\n    ROUND(AVG(c.tenure_months), 1) AS avg_tenure_months,\n    MIN(c.tenure_months) AS min_tenure, MAX(c.tenure_months) AS max_tenure,\n    ROUND(AVG(b.monthly_charges), 2) AS avg_monthly_charges\nFROM customers c\nJOIN churn ch ON c.customer_id = ch.customer_id\nJOIN billing b ON c.customer_id = b.customer_id\nGROUP BY ch.churn_status;"
+        },
+        {
+          "number": 4,
+          "title": "Churn by internet service type",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    c.internet_service, COUNT(*) AS customers,\n    SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct,\n    ROUND(AVG(b.monthly_charges), 2) AS avg_monthly_charges\nFROM customers c\nJOIN churn ch ON c.customer_id = ch.customer_id\nJOIN billing b ON c.customer_id = b.customer_id\nGROUP BY c.internet_service\nORDER BY churn_rate_pct DESC;"
+        },
+        {
+          "number": 5,
+          "title": "Churn by payment method",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    c.payment_method, COUNT(*) AS customers,\n    SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct,\n    ROUND(AVG(c.tenure_months), 1) AS avg_tenure\nFROM customers c\nJOIN churn ch ON c.customer_id = ch.customer_id\nGROUP BY c.payment_method\nORDER BY churn_rate_pct DESC;"
+        },
+        {
+          "number": 6,
+          "title": "Churn by tenure bucket",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    CASE\n        WHEN c.tenure_months <= 6 THEN '0-6 months'\n        WHEN c.tenure_months <= 12 THEN '7-12 months'\n        WHEN c.tenure_months <= 24 THEN '1-2 years'\n        WHEN c.tenure_months <= 48 THEN '2-4 years'\n        ELSE '4+ years'\n    END AS tenure_bucket,\n    COUNT(*) AS customers,\n    SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct\nFROM customers c\nJOIN churn ch ON c.customer_id = ch.customer_id\nGROUP BY tenure_bucket\nORDER BY MIN(c.tenure_months);"
+        },
+        {
+          "number": 7,
+          "title": "Churn by derived signup cohort",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    ch.derived_signup_month AS signup_cohort, COUNT(*) AS cohort_size,\n    SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct,\n    ROUND(AVG(b.monthly_charges), 2) AS avg_monthly_charges\nFROM churn ch\nJOIN billing b ON ch.customer_id = b.customer_id\nGROUP BY ch.derived_signup_month\nHAVING COUNT(*) >= 20\nORDER BY signup_cohort;"
+        },
+        {
+          "number": 8,
+          "title": "Retention curve by tenure month",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH by_tenure AS (\n    SELECT c.tenure_months,\n           COUNT(*) AS customers,\n           SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned\n    FROM customers c\n    JOIN churn ch ON c.customer_id = ch.customer_id\n    GROUP BY c.tenure_months\n)\nSELECT\n    tenure_months, customers, churned,\n    ROUND(100.0 * churned / customers, 2) AS churn_rate_pct,\n    SUM(customers) OVER (ORDER BY tenure_months DESC\n        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS still_active_at_or_beyond,\n    ROUND(100.0 * SUM(customers) OVER (ORDER BY tenure_months DESC\n        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)\n        / (SELECT COUNT(*) FROM customers), 2) AS pct_reaching_tenure\nFROM by_tenure\nORDER BY tenure_months;"
+        },
+        {
+          "number": 9,
+          "title": "Highest-risk demographic combinations",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    CASE WHEN c.senior_citizen = 1 THEN 'Senior' ELSE 'Non-senior' END AS age_group,\n    c.partner AS has_partner, c.dependents AS has_dependents, COUNT(*) AS group_size,\n    SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct,\n    RANK() OVER (ORDER BY 1.0 * SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END)\n                          / COUNT(*) DESC) AS risk_rank\nFROM customers c\nJOIN churn ch ON c.customer_id = ch.customer_id\nGROUP BY age_group, c.partner, c.dependents\nHAVING COUNT(*) >= 100\nORDER BY risk_rank;"
+        },
+        {
+          "number": 10,
+          "title": "Price sensitivity - churn by monthly-charge quartile",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH tiers AS (\n    SELECT b.customer_id, b.monthly_charges, ch.churn_status,\n           NTILE(4) OVER (ORDER BY b.monthly_charges) AS charge_quartile\n    FROM billing b\n    JOIN churn ch ON b.customer_id = ch.customer_id\n)\nSELECT\n    charge_quartile, COUNT(*) AS customers, ROUND(MIN(monthly_charges), 2) AS min_charge,\n    ROUND(MAX(monthly_charges), 2) AS max_charge, ROUND(AVG(monthly_charges), 2) AS avg_charge,\n    SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct\nFROM tiers\nGROUP BY charge_quartile\nORDER BY charge_quartile;"
+        },
+        {
+          "number": 11,
+          "title": "Does bundling more services reduce churn?",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH bundles AS (\n    SELECT\n        s.customer_id, ch.churn_status,\n        (CASE WHEN s.online_security = 'Yes' THEN 1 ELSE 0 END) +\n        (CASE WHEN s.online_backup = 'Yes' THEN 1 ELSE 0 END) +\n        (CASE WHEN s.device_protection = 'Yes' THEN 1 ELSE 0 END) +\n        (CASE WHEN s.tech_support = 'Yes' THEN 1 ELSE 0 END) +\n        (CASE WHEN s.streaming_tv = 'Yes' THEN 1 ELSE 0 END) +\n        (CASE WHEN s.streaming_movies = 'Yes' THEN 1 ELSE 0 END) AS service_count\n    FROM services s\n    JOIN churn ch ON s.customer_id = ch.customer_id\n)\nSELECT\n    service_count, COUNT(*) AS customers,\n    SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct\nFROM bundles\nGROUP BY service_count\nORDER BY service_count;"
+        },
+        {
+          "number": 12,
+          "title": "Early-warning signal count",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH signals AS (\n    SELECT\n        c.customer_id, c.tenure_months, c.contract_type, b.monthly_charges,\n        ch.churn_status,\n        CASE WHEN c.contract_type = 'Month-to-month' THEN 1 ELSE 0 END AS f_mtm,\n        CASE WHEN c.tenure_months < 12 THEN 1 ELSE 0 END AS f_new,\n        CASE WHEN b.monthly_charges > 75 THEN 1 ELSE 0 END AS f_expensive,\n        CASE WHEN c.partner = 'No' THEN 1 ELSE 0 END AS f_no_partner,\n        CASE WHEN c.payment_method = 'Electronic check' THEN 1 ELSE 0 END AS f_echeck,\n        CASE WHEN s.tech_support = 'No' THEN 1 ELSE 0 END AS f_no_support\n    FROM customers c\n    JOIN billing b ON c.customer_id = b.customer_id\n    JOIN services s ON c.customer_id = s.customer_id\n    JOIN churn ch ON c.customer_id = ch.customer_id\n)\nSELECT\n    (f_mtm + f_new + f_expensive + f_no_partner + f_echeck + f_no_support) AS signal_count,\n    COUNT(*) AS customers,\n    SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS actual_churn_rate_pct\nFROM signals\nGROUP BY signal_count\nORDER BY signal_count;"
+        },
+        {
+          "number": 13,
+          "title": "Which individual service most reduces churn?",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH sa AS (\n    SELECT s.*, ch.churn_status\n    FROM services s JOIN churn ch ON s.customer_id = ch.customer_id\n)\nSELECT 'Online security' AS service,\n       SUM(CASE WHEN online_security = 'Yes' THEN 1 ELSE 0 END) AS subscribers,\n       ROUND(100.0 * SUM(CASE WHEN online_security = 'Yes' AND churn_status = 'Yes' THEN 1 ELSE 0 END)\n             / NULLIF(SUM(CASE WHEN online_security = 'Yes' THEN 1 ELSE 0 END), 0), 2) AS churn_rate_pct\nFROM sa\nUNION ALL\nSELECT 'Online backup',\n       SUM(CASE WHEN online_backup = 'Yes' THEN 1 ELSE 0 END),\n       ROUND(100.0 * SUM(CASE WHEN online_backup = 'Yes' AND churn_status = 'Yes' THEN 1 ELSE 0 END)\n             / NULLIF(SUM(CASE WHEN online_backup = 'Yes' THEN 1 ELSE 0 END), 0), 2)\nFROM sa\nUNION ALL\nSELECT 'Device protection',\n       SUM(CASE WHEN device_protection = 'Yes' THEN 1 ELSE 0 END),\n       ROUND(100.0 * SUM(CASE WHEN device_protection = 'Yes' AND churn_status = 'Yes' THEN 1 ELSE 0 END)\n             / NULLIF(SUM(CASE WHEN device_protection = 'Yes' THEN 1 ELSE 0 END), 0), 2)\nFROM sa\nUNION ALL\nSELECT 'Tech support',\n       SUM(CASE WHEN tech_support = 'Yes' THEN 1 ELSE 0 END),\n       ROUND(100.0 * SUM(CASE WHEN tech_support = 'Yes' AND churn_status = 'Yes' THEN 1 ELSE 0 END)\n             / NULLIF(SUM(CASE WHEN tech_support = 'Yes' THEN 1 ELSE 0 END), 0), 2)\nFROM sa\nUNION ALL\nSELECT 'Streaming TV',\n       SUM(CASE WHEN streaming_tv = 'Yes' THEN 1 ELSE 0 END),\n       ROUND(100.0 * SUM(CASE WHEN streaming_tv = 'Yes' AND churn_status = 'Yes' THEN 1 ELSE 0 END)\n             / NULLIF(SUM(CASE WHEN streaming_tv = 'Yes' THEN 1 ELSE 0 END), 0), 2)\nFROM sa\nUNION ALL\nSELECT 'Streaming movies',\n       SUM(CASE WHEN streaming_movies = 'Yes' THEN 1 ELSE 0 END),\n       ROUND(100.0 * SUM(CASE WHEN streaming_movies = 'Yes' AND churn_status = 'Yes' THEN 1 ELSE 0 END)\n             / NULLIF(SUM(CASE WHEN streaming_movies = 'Yes' THEN 1 ELSE 0 END), 0), 2)\nFROM sa\nORDER BY churn_rate_pct;"
+        },
+        {
+          "number": 14,
+          "title": "Contract effectiveness scorecard",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    c.contract_type, COUNT(*) AS customers,\n    ROUND(100.0 * SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct,\n    ROUND(AVG(c.tenure_months), 1) AS avg_tenure,\n    ROUND(AVG(b.monthly_charges), 2) AS avg_monthly,\n    ROUND(AVG(b.total_charges), 2) AS avg_total_billed,\n    ROUND(100.0 * AVG(CASE WHEN c.paperless_billing = 'Yes' THEN 1.0 ELSE 0.0 END), 1) AS paperless_pct\nFROM customers c\nJOIN churn ch ON c.customer_id = ch.customer_id\nJOIN billing b ON c.customer_id = b.customer_id\nGROUP BY c.contract_type\nORDER BY churn_rate_pct;"
+        },
+        {
+          "number": 15,
+          "title": "Revenue impact of churn",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH base AS (\n    SELECT\n        c.customer_id, c.contract_type, c.tenure_months,\n        b.monthly_charges,\n        COALESCE(b.total_charges, 0) AS total_charges,\n        ch.churn_status\n    FROM customers c\n    JOIN billing b ON c.customer_id = b.customer_id\n    JOIN churn ch ON c.customer_id = ch.customer_id\n),\nvalued AS (\n    SELECT *,\n        CASE WHEN churn_status = 'No'\n             THEN total_charges + monthly_charges * 12\n             ELSE total_charges\n        END AS projected_12m_value,\n        CASE WHEN churn_status = 'Yes'\n             THEN monthly_charges * 12 ELSE 0 END AS annualised_revenue_lost\n    FROM base\n)\nSELECT\n    churn_status, COUNT(*) AS customers,\n    ROUND(AVG(monthly_charges), 2) AS avg_monthly,\n    ROUND(SUM(total_charges), 2) AS revenue_booked_to_date,\n    ROUND(SUM(projected_12m_value), 2) AS projected_value_next_12m,\n    ROUND(SUM(annualised_revenue_lost), 2) AS annualised_loss,\n    ROUND(100.0 * SUM(projected_12m_value)\n          / SUM(SUM(projected_12m_value)) OVER (), 2) AS pct_of_total_value\nFROM valued\nGROUP BY churn_status\nORDER BY churn_status;"
+        },
+        {
+          "number": 16,
+          "title": "Weighted churn risk score (0-100) for still-active customers",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH p75 AS (\n    SELECT monthly_charges AS threshold\n    FROM (\n        SELECT monthly_charges,\n               ROW_NUMBER() OVER (ORDER BY monthly_charges) AS rn,\n               COUNT(*) OVER () AS n\n        FROM billing\n    )\n    WHERE rn = CAST(0.75 * (n - 1) + 1 AS INTEGER)\n),\nscored AS (\n    SELECT\n        c.customer_id, c.tenure_months, c.contract_type,\n        b.monthly_charges, ch.churn_status,\n        (CASE WHEN c.contract_type = 'Month-to-month' THEN 25 ELSE 0 END) +\n        (CASE WHEN c.tenure_months < 6 THEN 20 ELSE 0 END) +\n        (CASE WHEN b.monthly_charges > (SELECT threshold FROM p75) THEN 20 ELSE 0 END) +\n        (CASE WHEN c.partner = 'No' THEN 15 ELSE 0 END) +\n        (CASE WHEN c.payment_method = 'Electronic check' THEN 10 ELSE 0 END) +\n        (CASE WHEN c.internet_service = 'Fiber optic' THEN 10 ELSE 0 END) AS raw_score\n    FROM customers c\n    JOIN billing b ON c.customer_id = b.customer_id\n    JOIN churn ch ON c.customer_id = ch.customer_id\n)\nSELECT\n    customer_id, tenure_months, contract_type, ROUND(monthly_charges, 2) AS monthly_charges,\n    MIN(raw_score, 100) AS risk_score,\n    CASE\n        WHEN raw_score >= 75 THEN 'Critical'\n        WHEN raw_score >= 50 THEN 'High'\n        WHEN raw_score >= 25 THEN 'Medium'\n        ELSE 'Low'\n    END AS risk_tier,\n    ROUND(monthly_charges * 12, 2) AS annual_revenue_at_risk\nFROM scored\nWHERE churn_status = 'No'\nORDER BY raw_score DESC, annual_revenue_at_risk DESC\nLIMIT 250;"
+        },
+        {
+          "number": 17,
+          "title": "Cohort retention waterfall",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH cohort AS (\n    SELECT\n        ch.derived_signup_month AS cohort_month, c.tenure_months,\n        CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END AS churned\n    FROM customers c\n    JOIN churn ch ON c.customer_id = ch.customer_id\n)\nSELECT\n    cohort_month, COUNT(*) AS cohort_size, SUM(churned) AS churned,\n    ROUND(100.0 * SUM(CASE WHEN churned = 0 THEN 1 ELSE 0 END) / COUNT(*), 1) AS retained_pct,\n    SUM(CASE WHEN tenure_months >= 6 THEN 1 ELSE 0 END) AS reached_6m,\n    SUM(CASE WHEN tenure_months >= 12 THEN 1 ELSE 0 END) AS reached_12m,\n    SUM(CASE WHEN tenure_months >= 24 THEN 1 ELSE 0 END) AS reached_24m,\n    SUM(CASE WHEN tenure_months >= 48 THEN 1 ELSE 0 END) AS reached_48m\nFROM cohort\nGROUP BY cohort_month\nHAVING COUNT(*) >= 20\nORDER BY cohort_month;"
+        },
+        {
+          "number": 18,
+          "title": "Charge distribution percentiles, churned vs retained",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH ranked AS (\n    SELECT\n        ch.churn_status, b.monthly_charges,\n        ROW_NUMBER() OVER (PARTITION BY ch.churn_status ORDER BY b.monthly_charges) AS rn,\n        COUNT(*) OVER (PARTITION BY ch.churn_status) AS n\n    FROM billing b\n    JOIN churn ch ON b.customer_id = ch.customer_id\n)\nSELECT\n    churn_status, n AS customers,\n    ROUND(MAX(CASE WHEN rn = 1 THEN monthly_charges END), 2) AS min_charge,\n    ROUND(MAX(CASE WHEN rn = CAST(0.25*(n-1)+1 AS INTEGER) THEN monthly_charges END), 2) AS p25,\n    ROUND(MAX(CASE WHEN rn = CAST(0.50*(n-1)+1 AS INTEGER) THEN monthly_charges END), 2) AS median,\n    ROUND(MAX(CASE WHEN rn = CAST(0.75*(n-1)+1 AS INTEGER) THEN monthly_charges END), 2) AS p75,\n    ROUND(MAX(CASE WHEN rn = CAST(0.90*(n-1)+1 AS INTEGER) THEN monthly_charges END), 2) AS p90,\n    ROUND(MAX(CASE WHEN rn = n THEN monthly_charges END), 2) AS max_charge\nFROM ranked\nGROUP BY churn_status, n\nORDER BY churn_status;"
+        },
+        {
+          "number": 19,
+          "title": "Retention programme ROI",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH facts AS (\n    SELECT\n        SUM(CASE WHEN ch.churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n        ROUND(AVG(CASE WHEN ch.churn_status = 'Yes' THEN b.monthly_charges END), 2) AS avg_monthly_of_churned,\n        COUNT(*) AS total_customers\n    FROM billing b JOIN churn ch ON b.customer_id = ch.customer_id\n),\nassumptions AS (SELECT 5.0 AS offer_cost, 0.30 AS save_rate),\nmodel AS (\n    SELECT f.*, a.offer_cost, a.save_rate,\n           f.churned * f.avg_monthly_of_churned * 12 AS annual_revenue_lost,\n           f.churned * a.offer_cost AS programme_cost,\n           f.churned * a.save_rate AS customers_saved,\n           f.churned * a.save_rate * f.avg_monthly_of_churned * 12 AS revenue_recovered\n    FROM facts f CROSS JOIN assumptions a\n)\nSELECT\n    total_customers, churned, avg_monthly_of_churned,\n    ROUND(annual_revenue_lost, 2) AS annual_revenue_lost,\n    ROUND(offer_cost, 2) AS offer_cost_per_customer,\n    ROUND(100.0 * save_rate, 0) AS assumed_save_rate_pct,\n    ROUND(customers_saved, 0) AS customers_saved, ROUND(programme_cost, 2) AS programme_cost,\n    ROUND(revenue_recovered, 2) AS revenue_recovered,\n    ROUND(revenue_recovered - programme_cost, 2) AS net_benefit,\n    ROUND((revenue_recovered - programme_cost) / NULLIF(programme_cost, 0), 1) AS roi_multiple\nFROM model;"
+        },
+        {
+          "number": 20,
+          "title": "Segmented retention strategy",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH segmented AS (\n    SELECT\n        CASE\n            WHEN c.tenure_months < 6 THEN 'New'\n            WHEN c.tenure_months < 24 THEN 'Growing'\n            ELSE 'Established'\n        END AS lifecycle,\n        CASE\n            WHEN b.monthly_charges < 45 THEN 'Economy'\n            WHEN b.monthly_charges < 75 THEN 'Standard'\n            ELSE 'Premium'\n        END AS value_tier,\n        c.contract_type, b.monthly_charges,\n        ch.churn_status\n    FROM customers c\n    JOIN billing b ON c.customer_id = b.customer_id\n    JOIN churn ch ON c.customer_id = ch.customer_id\n),\nrolled AS (\n    SELECT\n        lifecycle, value_tier, contract_type, COUNT(*) AS segment_size,\n        SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) AS churned,\n        ROUND(100.0 * SUM(CASE WHEN churn_status = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 2) AS churn_rate_pct,\n        ROUND(SUM(CASE WHEN churn_status = 'Yes' THEN monthly_charges * 12 ELSE 0 END), 2) AS annual_revenue_lost\n    FROM segmented\n    GROUP BY lifecycle, value_tier, contract_type\n)\nSELECT\n    lifecycle, value_tier, contract_type,\n    segment_size, churned, churn_rate_pct, annual_revenue_lost,\n    RANK() OVER (ORDER BY annual_revenue_lost DESC) AS loss_rank,\n    CASE\n        WHEN churn_rate_pct > 40 THEN 'Critical'\n        WHEN churn_rate_pct > 25 THEN 'High'\n        WHEN churn_rate_pct > 12 THEN 'Watch'\n        ELSE 'Stable'\n    END AS priority,\n    CASE\n        WHEN lifecycle = 'New' AND contract_type = 'Month-to-month'\n             THEN 'Onboarding sequence + 12-month contract incentive'\n        WHEN value_tier = 'Premium' AND churn_rate_pct > 25\n             THEN 'Assign account manager; service-quality review'\n        WHEN contract_type = 'Month-to-month'\n             THEN 'Term-contract offer with loyalty discount'\n        WHEN churn_rate_pct > 25\n             THEN 'Targeted win-back campaign'\n        ELSE 'Business as usual'\n    END AS recommended_action\nFROM rolled\nWHERE segment_size >= 50\nORDER BY annual_revenue_lost DESC;"
+        }
+      ]
+    },
+    {
+      "id": "hr",
+      "slug": "hr",
+      "title": "HR",
+      "database": "project_3_hr.db",
+      "rows": 1000,
+      "source": "thedevastator/hr-analytics",
+      "sqlFile": "queries/03_hr.sql",
+      "questionCount": 21,
+      "questions": [
+        {
+          "number": 1,
+          "title": "Salary statistics by department",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    department, COUNT(*) AS headcount, ROUND(AVG(salary), 2) AS avg_salary,\n    MIN(salary) AS min_salary, MAX(salary) AS max_salary,\n    ROUND(sqrt( (SUM(salary * salary) - SUM(salary) * SUM(salary) / COUNT(*))\n                / NULLIF(COUNT(*) - 1, 0) ), 2) AS salary_stddev\nFROM employees\nGROUP BY department\nORDER BY avg_salary DESC;"
+        },
+        {
+          "number": 2,
+          "title": "Headcount and performance coverage by department",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    e.department, COUNT(*) AS employees, COUNT(p.performance_score) AS with_score,\n    COUNT(*) - COUNT(p.performance_score) AS missing_score,\n    ROUND(100.0 * COUNT(p.performance_score) / COUNT(*), 1) AS score_coverage_pct,\n    ROUND(AVG(p.performance_score), 2) AS avg_score_where_known\nFROM employees e\nLEFT JOIN performance p ON e.employee_id = p.employee_id\nGROUP BY e.department\nORDER BY e.department;"
+        },
+        {
+          "number": 3,
+          "title": "Most recent hires",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    employee_id, employee_name, department, location, joining_date, salary, experience_years,\n    CAST(julianday((SELECT MAX(joining_date) FROM employees))\n         - julianday(joining_date) AS INTEGER) AS days_before_latest_hire\nFROM employees\nWHERE joining_date >= date((SELECT MAX(joining_date) FROM employees), '-12 months')\nORDER BY joining_date DESC;"
+        },
+        {
+          "number": 4,
+          "title": "Salary by location and shift session",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    location, session, COUNT(*) AS headcount, ROUND(AVG(salary), 2) AS avg_salary,\n    MIN(salary) AS min_salary, MAX(salary) AS max_salary,\n    MAX(salary) - MIN(salary) AS salary_spread\nFROM employees\nGROUP BY location, session\nHAVING COUNT(*) >= 3\nORDER BY avg_salary DESC;"
+        },
+        {
+          "number": 5,
+          "title": "Active vs inactive workforce",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    department, COUNT(*) AS total,\n    SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS active,\n    SUM(CASE WHEN status = 'Inactive' THEN 1 ELSE 0 END) AS inactive,\n    ROUND(100.0 * SUM(CASE WHEN status = 'Inactive' THEN 1 ELSE 0 END) / COUNT(*), 2) AS attrition_rate_pct,\n    ROUND(AVG(CASE WHEN status = 'Inactive' THEN salary END), 2) AS avg_salary_leavers,\n    ROUND(AVG(CASE WHEN status = 'Active' THEN salary END), 2) AS avg_salary_stayers\nFROM employees\nGROUP BY department\nORDER BY attrition_rate_pct DESC;"
+        },
+        {
+          "number": 6,
+          "title": "Age distribution",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    CASE\n        WHEN age < 30 THEN '20-29'\n        WHEN age < 40 THEN '30-39'\n        WHEN age < 50 THEN '40-49'\n        WHEN age < 60 THEN '50-59'\n        ELSE '60+'\n    END AS age_band,\n    COUNT(*) AS employees, ROUND(AVG(salary), 2) AS avg_salary,\n    ROUND(AVG(experience_years), 1) AS avg_experience\nFROM employees\nGROUP BY age_band\nORDER BY MIN(age);"
+        },
+        {
+          "number": 7,
+          "title": "Salary rank within department",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    employee_id, employee_name, department, salary,\n    RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS salary_rank,\n    ROUND(AVG(salary) OVER (PARTITION BY department), 2) AS dept_avg,\n    ROUND(salary - AVG(salary) OVER (PARTITION BY department), 2) AS vs_dept_avg,\n    ROUND(100.0 * salary / SUM(salary) OVER (PARTITION BY department), 3) AS pct_of_dept_payroll\nFROM employees\nORDER BY department, salary_rank;"
+        },
+        {
+          "number": 8,
+          "title": "Top 3 performers per department",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH ranked AS (\n    SELECT\n        e.employee_id, e.employee_name, e.department, e.salary,\n        p.performance_score,\n        ROW_NUMBER() OVER (PARTITION BY e.department\n                           ORDER BY p.performance_score DESC, e.salary DESC) AS rn\n    FROM employees e\n    INNER JOIN performance p ON e.employee_id = p.employee_id\n)\nSELECT department, rn AS rank_in_dept, employee_id, employee_name,\n       performance_score, salary\nFROM ranked\nWHERE rn <= 3\nORDER BY department, rn;"
+        },
+        {
+          "number": 9,
+          "title": "Salary percentiles and quartiles",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    employee_id, employee_name, department, salary,\n    ROUND(100 * PERCENT_RANK() OVER (ORDER BY salary), 2) AS salary_percentile,\n    NTILE(4) OVER (ORDER BY salary) AS quartile,\n    CASE NTILE(4) OVER (ORDER BY salary)\n        WHEN 4 THEN 'Top 25%'\n        WHEN 3 THEN 'Upper mid'\n        WHEN 2 THEN 'Lower mid'\n        ELSE 'Bottom 25%'\n    END AS pay_band\nFROM employees\nORDER BY salary DESC\nLIMIT 100;"
+        },
+        {
+          "number": 10,
+          "title": "Tenure derived from joining_date",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    employee_id, employee_name, department, joining_date, experience_years,\n    CAST(julianday((SELECT MAX(joining_date) FROM employees))\n         - julianday(joining_date) AS INTEGER) AS tenure_days,\n    (CAST(strftime('%Y', (SELECT MAX(joining_date) FROM employees)) AS INTEGER)\n       - CAST(strftime('%Y', joining_date) AS INTEGER)) * 12\n    + (CAST(strftime('%m', (SELECT MAX(joining_date) FROM employees)) AS INTEGER)\n       - CAST(strftime('%m', joining_date) AS INTEGER)) AS tenure_months,\n    ROUND((julianday((SELECT MAX(joining_date) FROM employees))\n           - julianday(joining_date)) / 365.25, 1) AS tenure_years\nFROM employees\nORDER BY tenure_days DESC\nLIMIT 100;"
+        },
+        {
+          "number": 11,
+          "title": "Does experience translate into pay?",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH bands AS (\n    SELECT\n        CASE\n            WHEN experience_years < 3 THEN '0-2 yrs'\n            WHEN experience_years < 6 THEN '3-5 yrs'\n            WHEN experience_years < 11 THEN '6-10 yrs'\n            WHEN experience_years < 16 THEN '11-15 yrs'\n            ELSE '16+ yrs'\n        END AS experience_band,\n        MIN(experience_years) AS band_floor, COUNT(*) AS employees,\n        ROUND(AVG(salary), 2) AS avg_salary\n    FROM employees\n    GROUP BY experience_band\n)\nSELECT\n    experience_band, employees, avg_salary,\n    ROUND(avg_salary - LAG(avg_salary) OVER (ORDER BY band_floor), 2) AS step_up_vs_prev_band,\n    ROUND(100.0 * (avg_salary - FIRST_VALUE(avg_salary) OVER (ORDER BY band_floor))\n          / FIRST_VALUE(avg_salary) OVER (ORDER BY band_floor), 1) AS pct_above_entry_band\nFROM bands\nORDER BY band_floor;"
+        },
+        {
+          "number": 12,
+          "title": "Salary outliers within department (z-score)",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH stats AS (\n    SELECT department,\n           AVG(salary) AS mean_salary,\n           sqrt( (SUM(salary * salary) - SUM(salary) * SUM(salary) / COUNT(*))\n                 / NULLIF(COUNT(*) - 1, 0) ) AS sd_salary\n    FROM employees\n    GROUP BY department\n)\nSELECT\n    e.employee_id, e.employee_name, e.department, e.salary,\n    ROUND(s.mean_salary, 2) AS dept_mean, ROUND(s.sd_salary, 2) AS dept_sd,\n    ROUND((e.salary - s.mean_salary) / NULLIF(s.sd_salary, 0), 2) AS z_score,\n    CASE\n        WHEN (e.salary - s.mean_salary) / NULLIF(s.sd_salary, 0) > 1.5 THEN 'Paid well above peers'\n        WHEN (e.salary - s.mean_salary) / NULLIF(s.sd_salary, 0) < -1.5 THEN 'Paid well below peers'\n        ELSE 'Within normal range'\n    END AS assessment\nFROM employees e\nJOIN stats s ON e.department = s.department\nWHERE ABS((e.salary - s.mean_salary) / NULLIF(s.sd_salary, 0)) > 1.5\nORDER BY ABS((e.salary - s.mean_salary) / NULLIF(s.sd_salary, 0)) DESC;"
+        },
+        {
+          "number": 13,
+          "title": "Attrition by tenure and department",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH tenure AS (\n    SELECT\n        department, status, salary,\n        CASE\n            WHEN experience_years < 2 THEN '0-1 yrs'\n            WHEN experience_years < 5 THEN '2-4 yrs'\n            WHEN experience_years < 10 THEN '5-9 yrs'\n            ELSE '10+ yrs'\n        END AS tenure_band,\n        MIN(experience_years) OVER () AS dummy\n    FROM employees\n)\nSELECT\n    tenure_band, department, COUNT(*) AS employees,\n    SUM(CASE WHEN status = 'Inactive' THEN 1 ELSE 0 END) AS left_company,\n    ROUND(100.0 * SUM(CASE WHEN status = 'Inactive' THEN 1 ELSE 0 END) / COUNT(*), 2) AS attrition_pct,\n    ROUND(AVG(salary), 2) AS avg_salary\nFROM tenure\nGROUP BY tenure_band, department\nHAVING COUNT(*) >= 10\nORDER BY attrition_pct DESC;"
+        },
+        {
+          "number": 14,
+          "title": "Is pay aligned with performance?",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    COALESCE(CAST(p.performance_score AS TEXT), 'No score on file') AS performance_score,\n    COUNT(*) AS employees, ROUND(AVG(e.salary), 2) AS avg_salary, MIN(e.salary) AS min_salary,\n    MAX(e.salary) AS max_salary,\n    ROUND(AVG(e.experience_years), 1) AS avg_experience,\n    ROUND(100.0 * SUM(CASE WHEN e.status = 'Inactive' THEN 1 ELSE 0 END) / COUNT(*), 2) AS attrition_pct\nFROM employees e\nLEFT JOIN performance p ON e.employee_id = p.employee_id\nGROUP BY p.performance_score\nORDER BY (p.performance_score IS NULL), p.performance_score;"
+        },
+        {
+          "number": 15,
+          "title": "Pay equity by gender within department",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH cell AS (\n    SELECT department, gender,\n           COUNT(*) AS employees, ROUND(AVG(salary), 2) AS avg_salary,\n           ROUND(AVG(experience_years), 1) AS avg_experience\n    FROM employees\n    GROUP BY department, gender\n),\ndept_base AS (\n    SELECT department,\n           ROUND(AVG(salary), 2) AS dept_avg_salary,\n           COUNT(*) AS dept_headcount\n    FROM employees GROUP BY department\n)\nSELECT\n    c.department, c.gender, c.employees, c.avg_salary, c.avg_experience, d.dept_avg_salary,\n    ROUND(c.avg_salary - d.dept_avg_salary, 2) AS gap_vs_dept_avg,\n    ROUND(100.0 * (c.avg_salary - d.dept_avg_salary) / d.dept_avg_salary, 2) AS gap_pct,\n    ROUND(100.0 * c.employees / d.dept_headcount, 1) AS share_of_dept_pct,\n    CASE\n        WHEN ABS(100.0 * (c.avg_salary - d.dept_avg_salary) / d.dept_avg_salary) < 2 THEN 'At parity'\n        WHEN c.avg_salary > d.dept_avg_salary THEN 'Above dept average'\n        ELSE 'Below dept average'\n    END AS equity_flag\nFROM cell c\nJOIN dept_base d ON c.department = d.department\nWHERE c.employees >= 20\nORDER BY c.department, c.avg_salary DESC;"
+        },
+        {
+          "number": 16,
+          "title": "Compensation bands from real percentiles",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH ranked AS (\n    SELECT department, salary,\n           ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary) AS rn,\n           COUNT(*) OVER (PARTITION BY department) AS n\n    FROM employees\n)\nSELECT\n    department, n AS headcount,\n    MAX(CASE WHEN rn = 1 THEN salary END) AS min_salary,\n    MAX(CASE WHEN rn = CAST(0.25*(n-1)+1 AS INTEGER) THEN salary END) AS p25,\n    MAX(CASE WHEN rn = CAST(0.50*(n-1)+1 AS INTEGER) THEN salary END) AS median,\n    MAX(CASE WHEN rn = CAST(0.75*(n-1)+1 AS INTEGER) THEN salary END) AS p75,\n    MAX(CASE WHEN rn = CAST(0.90*(n-1)+1 AS INTEGER) THEN salary END) AS p90,\n    MAX(CASE WHEN rn = n THEN salary END) AS max_salary,\n    MAX(CASE WHEN rn = CAST(0.75*(n-1)+1 AS INTEGER) THEN salary END)\n      - MAX(CASE WHEN rn = CAST(0.25*(n-1)+1 AS INTEGER) THEN salary END) AS iqr\nFROM ranked\nGROUP BY department, n\nORDER BY median DESC;"
+        },
+        {
+          "number": 17,
+          "title": "Is the missing performance data random?",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH flagged AS (\n    SELECT e.*,\n           CASE WHEN p.employee_id IS NULL THEN 'Missing score' ELSE 'Has score' END AS score_status\n    FROM employees e\n    LEFT JOIN performance p ON e.employee_id = p.employee_id\n)\nSELECT\n    score_status, COUNT(*) AS employees,\n    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM employees), 1) AS pct_of_workforce,\n    ROUND(AVG(salary), 2) AS avg_salary, ROUND(AVG(age), 1) AS avg_age,\n    ROUND(AVG(experience_years), 1) AS avg_experience,\n    ROUND(100.0 * SUM(CASE WHEN status = 'Inactive' THEN 1 ELSE 0 END) / COUNT(*), 2) AS attrition_pct,\n    ROUND(100.0 * SUM(CASE WHEN department = 'IT' THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_it,\n    ROUND(100.0 * SUM(CASE WHEN department = 'Sales' THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_sales,\n    ROUND(100.0 * SUM(CASE WHEN department = 'HR' THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_hr\nFROM flagged\nGROUP BY score_status;"
+        },
+        {
+          "number": 18,
+          "title": "Attrition risk score",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH dept_stats AS (\n    SELECT department, AVG(salary) AS dept_avg FROM employees GROUP BY department\n),\nscored AS (\n    SELECT\n        e.employee_id, e.employee_name, e.department, e.salary,\n        e.experience_years, e.age, p.performance_score, d.dept_avg,\n        (CASE WHEN e.experience_years BETWEEN 2 AND 4 THEN 25 ELSE 0 END) +\n        (CASE WHEN e.salary < d.dept_avg * 0.85 THEN 25 ELSE 0 END) +\n        (CASE WHEN p.performance_score >= 4 THEN 20 ELSE 0 END) +\n        (CASE WHEN p.performance_score <= 2 THEN 15 ELSE 0 END) +\n        (CASE WHEN p.performance_score IS NULL THEN 10 ELSE 0 END) +\n        (CASE WHEN e.age < 30 THEN 10 ELSE 0 END) AS raw_score\n    FROM employees e\n    JOIN dept_stats d ON e.department = d.department\n    LEFT JOIN performance p ON e.employee_id = p.employee_id\n    WHERE e.status = 'Active'\n)\nSELECT\n    employee_id, employee_name, department, salary,\n    ROUND(dept_avg, 2) AS dept_avg_salary, experience_years, performance_score,\n    MIN(raw_score, 100) AS attrition_risk_score,\n    CASE\n        WHEN raw_score >= 60 THEN 'Critical'\n        WHEN raw_score >= 40 THEN 'High'\n        WHEN raw_score >= 20 THEN 'Medium'\n        ELSE 'Low'\n    END AS risk_tier,\n    CASE\n        WHEN salary < dept_avg * 0.85 AND performance_score >= 4\n             THEN 'Underpaid high performer - salary review'\n        WHEN performance_score >= 4\n             THEN 'High performer - development conversation'\n        WHEN performance_score <= 2\n             THEN 'Performance support plan'\n        WHEN performance_score IS NULL\n             THEN 'No review on file - schedule one'\n        ELSE 'Standard management'\n    END AS recommended_action\nFROM scored\nWHERE raw_score >= 20\nORDER BY raw_score DESC, salary\nLIMIT 200;"
+        },
+        {
+          "number": 19,
+          "title": "Department balanced scorecard",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH metrics AS (\n    SELECT\n        e.department, COUNT(*) AS headcount, ROUND(AVG(e.salary), 2) AS avg_salary,\n        ROUND(AVG(p.performance_score), 2) AS avg_performance,\n        ROUND(AVG(e.experience_years), 1) AS avg_experience,\n        ROUND(100.0 * SUM(CASE WHEN e.status = 'Inactive' THEN 1 ELSE 0 END) / COUNT(*), 2) AS attrition_pct,\n        ROUND(100.0 * COUNT(p.performance_score) / COUNT(*), 1) AS review_coverage_pct\n    FROM employees e\n    LEFT JOIN performance p ON e.employee_id = p.employee_id\n    GROUP BY e.department\n),\nscored AS (\n    SELECT *,\n        ROUND(100.0 * avg_performance / 5.0, 1) AS performance_index,\n        ROUND(100.0 - attrition_pct, 1) AS retention_index,\n        ROUND(review_coverage_pct, 1) AS governance_index\n    FROM metrics\n)\nSELECT\n    department, headcount, avg_salary, avg_performance, avg_experience,\n    attrition_pct, review_coverage_pct,\n    performance_index, retention_index, governance_index,\n    ROUND((performance_index + retention_index + governance_index) / 3.0, 1) AS overall_score,\n    RANK() OVER (ORDER BY (performance_index + retention_index + governance_index) DESC) AS dept_rank\nFROM scored\nORDER BY overall_score DESC;"
+        },
+        {
+          "number": 20,
+          "title": "Five-year salary projection",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH rates AS (\n    SELECT\n        e.employee_id, e.employee_name, e.department, e.salary,\n        p.performance_score,\n        CASE\n            WHEN p.performance_score >= 4.5 THEN 0.06\n            WHEN p.performance_score >= 4.0 THEN 0.05\n            WHEN p.performance_score >= 3.0 THEN 0.04\n            WHEN p.performance_score IS NOT NULL THEN 0.025\n            ELSE 0.03 -- no score on file: company default\n        END AS annual_growth_rate\n    FROM employees e\n    LEFT JOIN performance p ON e.employee_id = p.employee_id\n    WHERE e.status = 'Active'\n),\nprojected AS (\n    SELECT *,\n        ROUND(salary * POWER(1 + annual_growth_rate, 1), 2) AS year_1,\n        ROUND(salary * POWER(1 + annual_growth_rate, 3), 2) AS year_3,\n        ROUND(salary * POWER(1 + annual_growth_rate, 5), 2) AS year_5\n    FROM rates\n)\nSELECT\n    employee_id, employee_name, department,\n    COALESCE(CAST(performance_score AS TEXT), 'none') AS performance_score,\n    salary AS current_salary,\n    ROUND(100.0 * annual_growth_rate, 1) AS growth_rate_pct,\n    year_1, year_3, year_5,\n    ROUND(year_5 - salary, 2) AS total_increase_5yr,\n    ROUND(100.0 * (year_5 - salary) / salary, 1) AS pct_increase_5yr,\n    SUM(year_5 - salary) OVER (PARTITION BY department) AS dept_incremental_cost_5yr\nFROM projected\nORDER BY total_increase_5yr DESC\nLIMIT 200;"
+        },
+        {
+          "number": 21,
+          "title": "Employees against the department dimension",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "SELECT\n    d.department_name, d.headcount AS dim_headcount, d.avg_salary AS dim_avg_salary,\n    COUNT(e.employee_id) AS live_headcount, ROUND(AVG(e.salary), 2) AS live_avg_salary,\n    ROUND(d.avg_salary - AVG(e.salary), 6) AS cache_drift,\n    COUNT(p.performance_score) AS with_score,\n    ROUND(AVG(p.performance_score), 2) AS avg_score,\n    SUM(CASE WHEN e.salary > d.avg_salary THEN 1 ELSE 0 END) AS paid_above_dept_avg,\n    ROUND(100.0 * SUM(CASE WHEN e.salary > d.avg_salary THEN 1 ELSE 0 END)\n          / COUNT(e.employee_id), 1) AS pct_above_dept_avg\nFROM departments d\nJOIN employees e ON e.department = d.department_name\nLEFT JOIN performance p ON p.employee_id = e.employee_id\nGROUP BY d.department_name, d.headcount, d.avg_salary\nORDER BY d.avg_salary DESC;"
+        }
+      ]
+    },
+    {
+      "id": "food",
+      "slug": "food-delivery",
+      "title": "Food Delivery",
+      "database": "project_4_food.db",
+      "rows": 20000,
+      "source": "thedevastator/food-delivery",
+      "sqlFile": "queries/04_food_delivery.sql",
+      "questionCount": 21,
+      "questions": [
+        {
+          "number": 1,
+          "title": "Platform overview",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    COUNT(*) AS total_orders, COUNT(DISTINCT restaurant_id) AS restaurants,\n    COUNT(DISTINCT customer_id) AS customers, ROUND(SUM(order_value), 2) AS total_revenue,\n    ROUND(AVG(order_value), 2) AS avg_order_value,\n    ROUND(AVG(delivery_distance_km), 2) AS avg_distance_km,\n    ROUND(AVG(delivery_delay_min), 2) AS avg_delay_min,\n    MIN(order_date) AS first_order,\n    MAX(order_date) AS last_order\nFROM orders;"
+        },
+        {
+          "number": 2,
+          "title": "Top restaurants by revenue",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    o.restaurant_id, COUNT(*) AS orders, ROUND(SUM(o.order_value), 2) AS revenue,\n    ROUND(AVG(o.order_value), 2) AS avg_order_value,\n    ROUND(AVG(o.delivery_delay_min), 2) AS avg_delay_min,\n    r.avg_rating\nFROM orders o\nJOIN restaurants r ON o.restaurant_id = r.restaurant_id\nGROUP BY o.restaurant_id, r.avg_rating\nORDER BY revenue DESC\nLIMIT 20;"
+        },
+        {
+          "number": 3,
+          "title": "Most popular menu items",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    food_item, COUNT(*) AS orders,\n    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM orders), 2) AS pct_of_orders,\n    ROUND(SUM(order_value), 2) AS revenue,\n    ROUND(AVG(order_value), 2) AS avg_value\nFROM orders\nGROUP BY food_item\nORDER BY orders DESC;"
+        },
+        {
+          "number": 4,
+          "title": "Demand by city",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    c.location AS city, COUNT(*) AS orders, ROUND(SUM(o.order_value), 2) AS revenue,\n    ROUND(AVG(o.order_value), 2) AS avg_order_value,\n    ROUND(AVG(o.delivery_distance_km), 2) AS avg_distance_km,\n    ROUND(AVG(o.delivery_delay_min), 2) AS avg_delay_min\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nGROUP BY c.location\nORDER BY revenue DESC;"
+        },
+        {
+          "number": 5,
+          "title": "Early, on-time and late deliveries",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    CASE\n        WHEN delivery_delay_min < 0 THEN 'Early'\n        WHEN delivery_delay_min = 0 THEN 'Exactly on time'\n        WHEN delivery_delay_min <= 5 THEN 'Late by up to 5 min'\n        WHEN delivery_delay_min <= 10 THEN 'Late by 5-10 min'\n        ELSE 'Late by over 10 min'\n    END AS delivery_outcome,\n    COUNT(*) AS orders,\n    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM orders), 2) AS pct_of_orders,\n    ROUND(AVG(delivery_delay_min), 2) AS avg_delay_in_bucket,\n    ROUND(AVG(delivery_distance_km), 2) AS avg_distance\nFROM orders\nGROUP BY delivery_outcome\nORDER BY MIN(delivery_delay_min);"
+        },
+        {
+          "number": 6,
+          "title": "Customer base profile",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    loyalty_program, order_frequency, COUNT(*) AS customers, ROUND(AVG(age), 1) AS avg_age,\n    ROUND(AVG(prior_order_count), 1) AS avg_prior_orders\nFROM customers\nGROUP BY loyalty_program, order_frequency\nORDER BY customers DESC;"
+        },
+        {
+          "number": 7,
+          "title": "Day-of-week ordering pattern",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    CAST(strftime('%w', order_date) AS INTEGER) AS dow_number,\n    CASE CAST(strftime('%w', order_date) AS INTEGER)\n        WHEN 0 THEN 'Sunday' WHEN 1 THEN 'Monday'\n        WHEN 2 THEN 'Tuesday' WHEN 3 THEN 'Wednesday'\n        WHEN 4 THEN 'Thursday' WHEN 5 THEN 'Friday'\n        ELSE 'Saturday'\n    END AS day_name,\n    COUNT(*) AS orders, ROUND(SUM(order_value), 2) AS revenue,\n    ROUND(AVG(order_value), 2) AS avg_order_value,\n    ROUND(AVG(delivery_delay_min), 2) AS avg_delay_min\nFROM orders\nGROUP BY dow_number\nORDER BY dow_number;"
+        },
+        {
+          "number": 8,
+          "title": "Monthly trend with month-over-month growth",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    strftime('%Y-%m', order_date) AS month, COUNT(*) AS orders,\n    ROUND(SUM(order_value), 2) AS revenue,\n    ROUND(LAG(SUM(order_value)) OVER (ORDER BY strftime('%Y-%m', order_date)), 2) AS prev_month_revenue,\n    ROUND(100.0 * (SUM(order_value) - LAG(SUM(order_value)) OVER (ORDER BY strftime('%Y-%m', order_date)))\n          / NULLIF(LAG(SUM(order_value)) OVER (ORDER BY strftime('%Y-%m', order_date)), 0), 2) AS growth_pct\nFROM orders\nGROUP BY month\nORDER BY month;"
+        },
+        {
+          "number": 9,
+          "title": "Restaurant league table",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH stats AS (\n    SELECT\n        o.restaurant_id, COUNT(*) AS orders, ROUND(SUM(o.order_value), 2) AS revenue,\n        ROUND(AVG(o.delivery_delay_min), 2) AS avg_delay,\n        ROUND(AVG(q.customer_satisfaction), 3) AS avg_satisfaction\n    FROM orders o\n    JOIN order_quality q ON o.order_id = q.order_id\n    GROUP BY o.restaurant_id\n)\nSELECT\n    restaurant_id, orders, revenue, avg_delay, avg_satisfaction,\n    RANK() OVER (ORDER BY revenue DESC) AS revenue_rank,\n    RANK() OVER (ORDER BY avg_delay ASC) AS speed_rank,\n    RANK() OVER (ORDER BY avg_satisfaction DESC) AS satisfaction_rank\nFROM stats\nORDER BY revenue_rank\nLIMIT 30;"
+        },
+        {
+          "number": 10,
+          "title": "Does distance predict delay?",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    CASE\n        WHEN delivery_distance_km < 5 THEN '2-5 km'\n        WHEN delivery_distance_km < 10 THEN '5-10 km'\n        ELSE '10-15 km'\n    END AS distance_band,\n    COUNT(*) AS orders,\n    ROUND(AVG(delivery_distance_km), 2) AS avg_distance,\n    ROUND(AVG(delivery_delay_min), 3) AS avg_delay_min,\n    ROUND(MIN(delivery_delay_min), 1) AS min_delay,\n    ROUND(MAX(delivery_delay_min), 1) AS max_delay,\n    ROUND(sqrt( (SUM(delivery_delay_min * delivery_delay_min)\n                 - SUM(delivery_delay_min) * SUM(delivery_delay_min) / COUNT(*))\n                / NULLIF(COUNT(*) - 1, 0) ), 3) AS delay_stddev\nFROM orders\nGROUP BY distance_band\nORDER BY MIN(delivery_distance_km);"
+        },
+        {
+          "number": 11,
+          "title": "Weather and traffic interaction",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    weather_condition, traffic_condition, COUNT(*) AS orders,\n    ROUND(AVG(delivery_delay_min), 3) AS avg_delay_min,\n    ROUND(100.0 * SUM(CASE WHEN delivery_delay_min > 10 THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_over_10min_late,\n    ROUND(AVG(order_value), 2) AS avg_order_value\nFROM orders\nGROUP BY weather_condition, traffic_condition\nORDER BY avg_delay_min DESC;"
+        },
+        {
+          "number": 12,
+          "title": "Do customers order the cuisine they say they prefer?",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    c.preferred_cuisine, COUNT(*) AS orders,\n    COUNT(DISTINCT o.food_item) AS distinct_items_ordered,\n    ROUND(AVG(o.order_value), 2) AS avg_order_value,\n    ROUND(AVG(q.customer_satisfaction), 3) AS avg_satisfaction\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_quality q ON o.order_id = q.order_id\nGROUP BY c.preferred_cuisine\nORDER BY orders DESC;"
+        },
+        {
+          "number": 13,
+          "title": "Route efficiency and delivery method",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH bucketed AS (\n    SELECT\n        delivery_method, route_type, traffic_avoidance, delivery_delay_min, route_efficiency,\n        NTILE(4) OVER (ORDER BY route_efficiency) AS efficiency_quartile\n    FROM orders\n)\nSELECT\n    efficiency_quartile, delivery_method, COUNT(*) AS orders,\n    ROUND(AVG(route_efficiency), 3) AS avg_route_efficiency,\n    ROUND(AVG(delivery_delay_min), 3) AS avg_delay_min\nFROM bucketed\nGROUP BY efficiency_quartile, delivery_method\nORDER BY efficiency_quartile, delivery_method;"
+        },
+        {
+          "number": 14,
+          "title": "Quality scores versus satisfaction",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    q.food_freshness, COUNT(*) AS orders,\n    ROUND(AVG(q.customer_satisfaction), 3) AS avg_satisfaction,\n    ROUND(AVG(q.customer_rating), 3) AS avg_rating,\n    ROUND(AVG(q.packaging_quality), 3) AS avg_packaging,\n    ROUND(AVG(o.order_value), 2) AS avg_order_value\nFROM order_quality q\nJOIN orders o ON q.order_id = o.order_id\nGROUP BY q.food_freshness\nORDER BY q.food_freshness;"
+        },
+        {
+          "number": 15,
+          "title": "Restaurant performance scorecard",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH base AS (\n    SELECT\n        o.restaurant_id, COUNT(*) AS orders, AVG(o.order_value) AS avg_value,\n        AVG(o.delivery_delay_min) AS avg_delay,\n        AVG(q.customer_satisfaction) AS avg_satisfaction,\n        SUM(CASE WHEN o.delivery_delay_min <= 0 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS on_time_rate\n    FROM orders o\n    JOIN order_quality q ON o.order_id = q.order_id\n    GROUP BY o.restaurant_id\n),\nscored AS (\n    SELECT *,\n        PERCENT_RANK() OVER (ORDER BY avg_value) AS value_pct,\n        PERCENT_RANK() OVER (ORDER BY on_time_rate) AS punctuality_pct,\n        PERCENT_RANK() OVER (ORDER BY avg_satisfaction) AS satisfaction_pct\n    FROM base\n)\nSELECT\n    restaurant_id, orders, ROUND(avg_value, 2) AS avg_order_value,\n    ROUND(avg_delay, 2) AS avg_delay_min,\n    ROUND(100.0 * on_time_rate, 1) AS on_time_pct,\n    ROUND(avg_satisfaction, 3) AS avg_satisfaction,\n    ROUND(100 * value_pct, 1) AS value_percentile,\n    ROUND(100 * punctuality_pct, 1) AS punctuality_percentile,\n    ROUND(100 * satisfaction_pct, 1) AS satisfaction_percentile,\n    ROUND(100 * (0.4 * punctuality_pct + 0.4 * satisfaction_pct + 0.2 * value_pct), 1) AS composite_score,\n    CASE\n        WHEN 0.4*punctuality_pct + 0.4*satisfaction_pct + 0.2*value_pct >= 0.75 THEN 'Tier 1'\n        WHEN 0.4*punctuality_pct + 0.4*satisfaction_pct + 0.2*value_pct >= 0.50 THEN 'Tier 2'\n        WHEN 0.4*punctuality_pct + 0.4*satisfaction_pct + 0.2*value_pct >= 0.25 THEN 'Tier 3'\n        ELSE 'Tier 4 - review'\n    END AS tier\nFROM scored\nORDER BY composite_score DESC;"
+        },
+        {
+          "number": 16,
+          "title": "SIGNAL TEST - does any factor explain delivery delay?",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH overall AS (\n    SELECT sqrt( (SUM(delivery_delay_min*delivery_delay_min)\n                  - SUM(delivery_delay_min)*SUM(delivery_delay_min)/COUNT(*))\n                 / NULLIF(COUNT(*)-1, 0) ) AS sd_all\n    FROM orders\n),\nfactor AS (\n    SELECT 'traffic_condition' AS factor, traffic_condition AS level,\n           COUNT(*) AS n, AVG(delivery_delay_min) AS mean_delay FROM orders GROUP BY traffic_condition\n    UNION ALL\n    SELECT 'weather_condition', weather_condition, COUNT(*), AVG(delivery_delay_min) FROM orders GROUP BY weather_condition\n    UNION ALL\n    SELECT 'delivery_method', delivery_method, COUNT(*), AVG(delivery_delay_min) FROM orders GROUP BY delivery_method\n    UNION ALL\n    SELECT 'route_type', route_type, COUNT(*), AVG(delivery_delay_min) FROM orders GROUP BY route_type\n    UNION ALL\n    SELECT 'traffic_avoidance', traffic_avoidance, COUNT(*), AVG(delivery_delay_min) FROM orders GROUP BY traffic_avoidance\n)\nSELECT\n    f.factor, COUNT(*) AS levels,\n    ROUND(MIN(f.mean_delay), 3) AS lowest_group_mean,\n    ROUND(MAX(f.mean_delay), 3) AS highest_group_mean,\n    ROUND(MAX(f.mean_delay) - MIN(f.mean_delay), 3) AS spread_minutes,\n    ROUND(o.sd_all, 3) AS overall_stddev,\n    ROUND((MAX(f.mean_delay) - MIN(f.mean_delay)) / o.sd_all, 4) AS effect_size,\n    CASE\n        WHEN (MAX(f.mean_delay) - MIN(f.mean_delay)) / o.sd_all > 0.20 THEN 'Meaningful effect'\n        WHEN (MAX(f.mean_delay) - MIN(f.mean_delay)) / o.sd_all > 0.05 THEN 'Weak effect'\n        ELSE 'NO DETECTABLE EFFECT - consistent with random data'\n    END AS verdict\nFROM factor f CROSS JOIN overall o\nGROUP BY f.factor, o.sd_all\nORDER BY effect_size DESC;"
+        },
+        {
+          "number": 17,
+          "title": "SIGNAL TEST - what drives customer satisfaction?",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH levels AS (\n    SELECT 'customer_rating' AS dimension, customer_rating AS level, AVG(customer_satisfaction) AS mean_sat, COUNT(*) AS n FROM order_quality GROUP BY customer_rating\n    UNION ALL\n    SELECT 'food_freshness', food_freshness, AVG(customer_satisfaction), COUNT(*) FROM order_quality GROUP BY food_freshness\n    UNION ALL\n    SELECT 'packaging_quality', packaging_quality, AVG(customer_satisfaction), COUNT(*) FROM order_quality GROUP BY packaging_quality\n)\nSELECT\n    dimension, COUNT(*) AS levels_observed,\n    ROUND(MIN(mean_sat), 3) AS satisfaction_at_worst_level,\n    ROUND(MAX(mean_sat), 3) AS satisfaction_at_best_level,\n    ROUND(MAX(mean_sat) - MIN(mean_sat), 3) AS total_lift,\n    CASE\n        WHEN MAX(mean_sat) - MIN(mean_sat) > 0.5 THEN 'Clear driver'\n        WHEN MAX(mean_sat) - MIN(mean_sat) > 0.2 THEN 'Possible driver'\n        ELSE 'NOT A DRIVER - flat across all levels'\n    END AS verdict\nFROM levels\nGROUP BY dimension\nORDER BY total_lift DESC;"
+        },
+        {
+          "number": 18,
+          "title": "SIGNAL TEST - is the loyalty programme worth anything?",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH grp AS (\n    SELECT\n        c.loyalty_program, COUNT(*) AS customers, AVG(o.order_value) AS mean_value,\n        AVG(q.customer_satisfaction) AS mean_satisfaction,\n        AVG(c.prior_order_count) AS mean_prior_orders,\n        AVG(o.delivery_delay_min) AS mean_delay\n    FROM customers c\n    JOIN orders o ON c.customer_id = o.customer_id\n    JOIN order_quality q ON o.order_id = q.order_id\n    GROUP BY c.loyalty_program\n)\nSELECT\n    loyalty_program, customers, ROUND(mean_value, 3) AS avg_order_value,\n    ROUND(mean_satisfaction, 3) AS avg_satisfaction,\n    ROUND(mean_prior_orders, 2) AS avg_prior_orders,\n    ROUND(mean_delay, 3) AS avg_delay_min,\n    ROUND(mean_value - MIN(mean_value) OVER (), 3) AS value_gap_vs_other_group,\n    ROUND(mean_satisfaction - MIN(mean_satisfaction) OVER (), 3) AS satisfaction_gap_vs_other_group\nFROM grp\nORDER BY loyalty_program;"
+        },
+        {
+          "number": 19,
+          "title": "Market share by city",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH city_rest AS (\n    SELECT\n        c.location AS city, o.restaurant_id, COUNT(*) AS orders,\n        SUM(o.order_value) AS revenue\n    FROM orders o\n    JOIN customers c ON o.customer_id = c.customer_id\n    GROUP BY c.location, o.restaurant_id\n),\nranked AS (\n    SELECT\n        city, restaurant_id, orders, revenue,\n        SUM(revenue) OVER (PARTITION BY city) AS city_revenue,\n        RANK() OVER (PARTITION BY city ORDER BY revenue DESC) AS rank_in_city,\n        COUNT(*) OVER (PARTITION BY city) AS restaurants_in_city\n    FROM city_rest\n)\nSELECT\n    city, restaurant_id, orders, ROUND(revenue, 2) AS revenue,\n    ROUND(city_revenue, 2) AS city_revenue,\n    ROUND(100.0 * revenue / city_revenue, 2) AS market_share_pct,\n    rank_in_city,\n    restaurants_in_city\nFROM ranked\nWHERE rank_in_city <= 5\nORDER BY city, rank_in_city;"
+        },
+        {
+          "number": 20,
+          "title": "Operational summary by city and weekday",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH detail AS (\n    SELECT\n        c.location AS city,\n        CASE CAST(strftime('%w', o.order_date) AS INTEGER)\n            WHEN 0 THEN 'Sunday' WHEN 1 THEN 'Monday'\n            WHEN 2 THEN 'Tuesday' WHEN 3 THEN 'Wednesday'\n            WHEN 4 THEN 'Thursday' WHEN 5 THEN 'Friday'\n            ELSE 'Saturday'\n        END AS day_name,\n        o.order_value, o.delivery_delay_min, q.customer_satisfaction\n    FROM orders o\n    JOIN customers c ON o.customer_id = c.customer_id\n    JOIN order_quality q ON o.order_id = q.order_id\n),\ncombined AS (\n    SELECT city, day_name, 0 AS sort_key,\n           COUNT(*) AS orders, ROUND(SUM(order_value), 2) AS revenue,\n           ROUND(AVG(delivery_delay_min), 2) AS avg_delay,\n           ROUND(AVG(customer_satisfaction), 3) AS avg_satisfaction\n    FROM detail\n    GROUP BY city, day_name\n    UNION ALL\n    SELECT city, 'ALL DAYS', 1, COUNT(*), ROUND(SUM(order_value), 2),\n           ROUND(AVG(delivery_delay_min), 2), ROUND(AVG(customer_satisfaction), 3)\n    FROM detail\n    GROUP BY city\n)\nSELECT city, day_name, orders, revenue, avg_delay, avg_satisfaction\nFROM combined\nORDER BY city, sort_key, day_name;"
+        },
+        {
+          "number": 21,
+          "title": "Route shape versus delivery outcome",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "SELECT\n    CASE WHEN is_small_route = 1 THEN 'Short route' ELSE 'Long route' END AS route_length,\n    CASE WHEN is_bike_friendly_route = 1 THEN 'Bike friendly' ELSE 'Not bike friendly' END AS bike_access,\n    delivery_method, COUNT(*) AS orders,\n    ROUND(AVG(delivery_distance_km), 2) AS avg_distance_km,\n    ROUND(AVG(delivery_delay_min), 3) AS avg_delay_min,\n    ROUND(AVG(route_efficiency), 3) AS avg_route_efficiency,\n    ROUND(100.0 * SUM(CASE WHEN delivery_delay_min <= 0 THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_early_or_on_time,\n    ROUND(MAX(AVG(delivery_delay_min)) OVER () - MIN(AVG(delivery_delay_min)) OVER (), 3) AS spread_across_all_groups\nFROM orders\nGROUP BY is_small_route, is_bike_friendly_route, delivery_method\nORDER BY avg_delay_min DESC;"
+        }
+      ]
+    },
+    {
+      "id": "fraud",
+      "slug": "fraud",
+      "title": "Fraud",
+      "database": "project_5_fraud.db",
+      "rows": 284807,
+      "source": "thedevastator/fraud-detection",
+      "sqlFile": "queries/05_fraud.sql",
+      "questionCount": 25,
+      "questions": [
+        {
+          "number": 1,
+          "title": "Fraud overview and class imbalance",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    COUNT(*) AS total_transactions, SUM(is_fraud) AS fraud_count, COUNT(*) - SUM(is_fraud) AS legitimate_count,\n    ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct,\n    ROUND(1.0 * COUNT(*) / NULLIF(SUM(is_fraud), 0), 0) AS one_fraud_every_n_txns,\n    ROUND(SUM(CASE WHEN is_fraud = 1 THEN amount ELSE 0 END), 2) AS total_fraud_amount,\n    ROUND(SUM(amount), 2) AS total_volume\nFROM transactions;"
+        },
+        {
+          "number": 2,
+          "title": "Fraud rate by hour of day",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    hour_of_day, COUNT(*) AS transactions, SUM(is_fraud) AS frauds,\n    ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct,\n    ROUND( (100.0 * SUM(is_fraud) / COUNT(*)) /\n           (SELECT 100.0 * SUM(is_fraud) / COUNT(*) FROM transactions), 2) AS times_base_rate,\n    ROUND(AVG(amount), 2) AS avg_amount\nFROM transactions\nGROUP BY hour_of_day\nORDER BY fraud_rate_pct DESC;"
+        },
+        {
+          "number": 3,
+          "title": "Largest transactions",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    transaction_id, ROUND(amount, 2) AS amount, hour_of_day, day_number, is_fraud,\n    CASE WHEN is_fraud = 1 THEN 'FRAUD' ELSE 'legitimate' END AS label\nFROM transactions\nORDER BY amount DESC\nLIMIT 50;"
+        },
+        {
+          "number": 4,
+          "title": "Amount profile of fraud vs legitimate",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    CASE WHEN is_fraud = 1 THEN 'Fraud' ELSE 'Legitimate' END AS class,\n    COUNT(*) AS transactions, ROUND(AVG(amount), 2) AS avg_amount,\n    ROUND(MIN(amount), 2) AS min_amount, ROUND(MAX(amount), 2) AS max_amount,\n    ROUND(SUM(amount), 2) AS total_amount,\n    SUM(CASE WHEN amount = 0 THEN 1 ELSE 0 END) AS zero_value_txns\nFROM transactions\nGROUP BY is_fraud;"
+        },
+        {
+          "number": 5,
+          "title": "Zero-amount transactions (card testing)",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    COUNT(*) AS zero_amount_txns, SUM(is_fraud) AS frauds_among_them,\n    ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct,\n    (SELECT ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) FROM transactions) AS overall_fraud_rate_pct,\n    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM transactions), 3) AS pct_of_all_txns\nFROM transactions\nWHERE amount = 0;"
+        },
+        {
+          "number": 6,
+          "title": "Volume and fraud by day",
+          "level": "Beginner",
+          "skill": "Beginner-friendly",
+          "sql": "SELECT\n    day_number, COUNT(*) AS transactions, SUM(is_fraud) AS frauds,\n    ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct, ROUND(SUM(amount), 2) AS volume,\n    ROUND(AVG(amount), 2) AS avg_amount\nFROM transactions\nGROUP BY day_number;"
+        },
+        {
+          "number": 7,
+          "title": "Amount outliers by z-score",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH stats AS (\n    SELECT AVG(amount) AS mean_amt,\n           sqrt( (SUM(amount*amount) - SUM(amount)*SUM(amount)/COUNT(*)) / NULLIF(COUNT(*)-1,0) ) AS sd_amt\n    FROM transactions\n)\nSELECT\n    t.transaction_id, ROUND(t.amount, 2) AS amount, t.hour_of_day, ROUND(s.mean_amt, 2) AS overall_mean,\n    ROUND((t.amount - s.mean_amt) / NULLIF(s.sd_amt, 0), 2) AS z_score, t.is_fraud\nFROM transactions t CROSS JOIN stats s\nWHERE ABS((t.amount - s.mean_amt) / NULLIF(s.sd_amt, 0)) > 5\nORDER BY z_score DESC\nLIMIT 100;"
+        },
+        {
+          "number": 8,
+          "title": "Fraud rate by amount band",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    CASE WHEN amount = 0 THEN 'a. Zero'\n        WHEN amount < 10 THEN 'b. Under 10'\n        WHEN amount < 50 THEN 'c. 10-50'\n        WHEN amount < 100 THEN 'd. 50-100'\n        WHEN amount < 500 THEN 'e. 100-500'\n        WHEN amount < 1000 THEN 'f. 500-1000'\n        ELSE 'g. 1000+' END AS amount_band,\n    COUNT(*) AS transactions, SUM(is_fraud) AS frauds,\n    ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct,\n    ROUND( (1.0 * SUM(is_fraud) / COUNT(*)) /\n           (SELECT 1.0 * SUM(is_fraud) / COUNT(*) FROM transactions), 2) AS lift_vs_base,\n    ROUND(100.0 * SUM(is_fraud) / (SELECT SUM(is_fraud) FROM transactions), 2) AS pct_of_all_fraud\nFROM transactions\nGROUP BY amount_band\nORDER BY amount_band;"
+        },
+        {
+          "number": 9,
+          "title": "How well do the PCA features separate the classes?",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH s AS (\n    SELECT\n        AVG(CASE WHEN is_fraud = 0 THEN v14 END) AS v14_legit, AVG(CASE WHEN is_fraud = 1 THEN v14 END) AS v14_fraud,\n        AVG(CASE WHEN is_fraud = 0 THEN v17 END) AS v17_legit, AVG(CASE WHEN is_fraud = 1 THEN v17 END) AS v17_fraud,\n        AVG(CASE WHEN is_fraud = 0 THEN v12 END) AS v12_legit, AVG(CASE WHEN is_fraud = 1 THEN v12 END) AS v12_fraud,\n        AVG(CASE WHEN is_fraud = 0 THEN v10 END) AS v10_legit, AVG(CASE WHEN is_fraud = 1 THEN v10 END) AS v10_fraud,\n        AVG(CASE WHEN is_fraud = 0 THEN amount END) AS amt_legit, AVG(CASE WHEN is_fraud = 1 THEN amount END) AS amt_fraud\n    FROM transactions\n)\nSELECT 'V14' AS feature, ROUND(v14_legit,4) AS legit_mean, ROUND(v14_fraud,4) AS fraud_mean,\n       ROUND(ABS(v14_fraud - v14_legit),4) AS separation FROM s\nUNION ALL SELECT 'V17', ROUND(v17_legit,4), ROUND(v17_fraud,4), ROUND(ABS(v17_fraud - v17_legit),4) FROM s\nUNION ALL SELECT 'V12', ROUND(v12_legit,4), ROUND(v12_fraud,4), ROUND(ABS(v12_fraud - v12_legit),4) FROM s\nUNION ALL SELECT 'V10', ROUND(v10_legit,4), ROUND(v10_fraud,4), ROUND(ABS(v10_fraud - v10_legit),4) FROM s\nUNION ALL SELECT 'Amount', ROUND(amt_legit,4), ROUND(amt_fraud,4), ROUND(ABS(amt_fraud - amt_legit),4) FROM s\nORDER BY separation DESC;"
+        },
+        {
+          "number": 10,
+          "title": "Transaction velocity in a rolling window",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH seq AS (\n    SELECT\n        transaction_id, seconds_elapsed, amount, is_fraud, hour_of_day,\n        LAG(seconds_elapsed) OVER (ORDER BY seconds_elapsed) AS prev_seconds,\n        COUNT(*) OVER (ORDER BY seconds_elapsed RANGE BETWEEN 60 PRECEDING AND CURRENT ROW) AS txns_last_60s\n    FROM transactions\n)\nSELECT\n    transaction_id, seconds_elapsed, seconds_elapsed - prev_seconds AS gap_seconds,\n    txns_last_60s, ROUND(amount, 2) AS amount, is_fraud\nFROM seq\nWHERE txns_last_60s > 20\nORDER BY txns_last_60s DESC\nLIMIT 100;"
+        },
+        {
+          "number": 11,
+          "title": "Amount percentiles by class",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH ranked AS (\n    SELECT\n        is_fraud, amount, ROW_NUMBER() OVER (PARTITION BY is_fraud ORDER BY amount) AS rn,\n        COUNT(*) OVER (PARTITION BY is_fraud) AS n\n    FROM transactions\n)\nSELECT\n    CASE WHEN is_fraud = 1 THEN 'Fraud' ELSE 'Legitimate' END AS class,\n    n AS transactions, ROUND(MAX(CASE WHEN rn = CAST(0.10*(n-1)+1 AS INTEGER) THEN amount END), 2) AS p10,\n    ROUND(MAX(CASE WHEN rn = CAST(0.25*(n-1)+1 AS INTEGER) THEN amount END), 2) AS p25,\n    ROUND(MAX(CASE WHEN rn = CAST(0.50*(n-1)+1 AS INTEGER) THEN amount END), 2) AS median,\n    ROUND(MAX(CASE WHEN rn = CAST(0.75*(n-1)+1 AS INTEGER) THEN amount END), 2) AS p75,\n    ROUND(MAX(CASE WHEN rn = CAST(0.95*(n-1)+1 AS INTEGER) THEN amount END), 2) AS p95,\n    ROUND(MAX(CASE WHEN rn = CAST(0.99*(n-1)+1 AS INTEGER) THEN amount END), 2) AS p99,\n    ROUND(MAX(CASE WHEN rn = n THEN amount END), 2) AS max\nFROM ranked\nGROUP BY is_fraud, n\nORDER BY is_fraud;"
+        },
+        {
+          "number": 12,
+          "title": "Fraud concentration matrix - hour against amount band",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    CASE WHEN hour_of_day BETWEEN 0 AND 5 THEN '00-05 (overnight)'\n         WHEN hour_of_day BETWEEN 6 AND 11 THEN '06-11 (morning)'\n         WHEN hour_of_day BETWEEN 12 AND 17 THEN '12-17 (afternoon)'\n         ELSE '18-23 (evening)' END AS time_block,\n    CASE WHEN amount < 50 THEN 'small (<50)'\n         WHEN amount < 500 THEN 'medium (50-500)'\n         ELSE 'large (500+)' END AS amount_band,\n    COUNT(*) AS transactions, SUM(is_fraud) AS frauds,\n    ROUND(100.0 * SUM(is_fraud) / COUNT(*), 4) AS fraud_rate_pct,\n    ROUND( (1.0 * SUM(is_fraud) / COUNT(*)) /\n           (SELECT 1.0 * SUM(is_fraud) / COUNT(*) FROM transactions), 2) AS lift\nFROM transactions\nGROUP BY time_block, amount_band\nHAVING COUNT(*) >= 100\nORDER BY lift DESC;"
+        },
+        {
+          "number": 13,
+          "title": "Where should the V14 cut-off go?",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "SELECT\n    CASE WHEN v14 < -10 THEN 'a. below -10'\n        WHEN v14 < -8 THEN 'b. -10 to -8'\n        WHEN v14 < -6 THEN 'c. -8 to -6'\n        WHEN v14 < -4 THEN 'd. -6 to -4'\n        WHEN v14 < -2 THEN 'e. -4 to -2'\n        WHEN v14 < 0 THEN 'f. -2 to 0'\n        ELSE 'g. 0 or above' END AS v14_band,\n    COUNT(*) AS transactions, SUM(is_fraud) AS frauds,\n    ROUND(100.0 * SUM(is_fraud) / COUNT(*), 3) AS fraud_rate_pct,\n    ROUND(100.0 * SUM(is_fraud) / (SELECT SUM(is_fraud) FROM transactions), 2) AS pct_of_all_fraud_caught\nFROM transactions\nGROUP BY v14_band\nORDER BY v14_band;"
+        },
+        {
+          "number": 14,
+          "title": "Cumulative fraud capture by risk ranking",
+          "level": "Intermediate",
+          "skill": "Intermediate-friendly",
+          "sql": "WITH ranked AS (\n    SELECT is_fraud, amount, v14,\n           NTILE(100) OVER (ORDER BY v14) AS risk_percentile\n    FROM transactions\n),\nper_bucket AS (\n    SELECT risk_percentile,\n           COUNT(*) AS txns,\n           SUM(is_fraud) AS frauds\n    FROM ranked GROUP BY risk_percentile\n)\nSELECT\n    risk_percentile, txns, frauds,\n    SUM(frauds) OVER (ORDER BY risk_percentile\n        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_frauds,\n    ROUND(100.0 * SUM(frauds) OVER (ORDER BY risk_percentile\n        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)\n        / (SELECT SUM(is_fraud) FROM transactions), 2) AS pct_of_fraud_captured,\n    ROUND(100.0 * SUM(txns) OVER (ORDER BY risk_percentile\n        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)\n        / (SELECT COUNT(*) FROM transactions), 2) AS pct_of_volume_reviewed\nFROM per_bucket\nORDER BY risk_percentile\nLIMIT 20;"
+        },
+        {
+          "number": 15,
+          "title": "Precision, recall and F1 for candidate rules",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH rules AS (\n    SELECT 'amount > 1000' AS rule, CASE WHEN amount > 1000 THEN 1 ELSE 0 END AS flag, is_fraud FROM transactions\n    UNION ALL SELECT 'amount > 200', CASE WHEN amount > 200 THEN 1 ELSE 0 END, is_fraud FROM transactions\n    UNION ALL SELECT 'overnight (0-5h)', CASE WHEN hour_of_day BETWEEN 0 AND 5 THEN 1 ELSE 0 END, is_fraud FROM transactions\n    UNION ALL SELECT 'V14 < -4', CASE WHEN v14 < -4 THEN 1 ELSE 0 END, is_fraud FROM transactions\n    UNION ALL SELECT 'V14 < -8', CASE WHEN v14 < -8 THEN 1 ELSE 0 END, is_fraud FROM transactions\n    UNION ALL SELECT 'V14 < -4 AND V17 < -4', CASE WHEN v14 < -4 AND v17 < -4 THEN 1 ELSE 0 END, is_fraud FROM transactions\n),\nmatrix AS (\n    SELECT rule,\n        SUM(CASE WHEN flag = 1 AND is_fraud = 1 THEN 1 ELSE 0 END) AS true_positives,\n        SUM(CASE WHEN flag = 1 AND is_fraud = 0 THEN 1 ELSE 0 END) AS false_positives,\n        SUM(CASE WHEN flag = 0 AND is_fraud = 1 THEN 1 ELSE 0 END) AS false_negatives,\n        SUM(CASE WHEN flag = 0 AND is_fraud = 0 THEN 1 ELSE 0 END) AS true_negatives\n    FROM rules GROUP BY rule\n)\nSELECT\n    rule, true_positives, false_positives, false_negatives,\n    ROUND(100.0 * true_positives / NULLIF(true_positives + false_positives, 0), 2) AS precision_pct,\n    ROUND(100.0 * true_positives / NULLIF(true_positives + false_negatives, 0), 2) AS recall_pct,\n    ROUND(2.0 * true_positives\n          / NULLIF(2.0 * true_positives + false_positives + false_negatives, 0), 4) AS f1_score,\n    ROUND(100.0 * (true_positives + true_negatives) / NULLIF(true_positives + false_positives + false_negatives + true_negatives, 0), 3) AS accuracy_pct_ignore_this\nFROM matrix\nORDER BY f1_score DESC;"
+        },
+        {
+          "number": 16,
+          "title": "Composite risk score",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH scored AS (\n    SELECT\n        transaction_id, amount, hour_of_day, v14, v17, v12, is_fraud,\n        (CASE WHEN v14 < -8 THEN 40 WHEN v14 < -4 THEN 25 WHEN v14 < -2 THEN 10 ELSE 0 END)\n      + (CASE WHEN v17 < -8 THEN 25 WHEN v17 < -4 THEN 15 ELSE 0 END)\n      + (CASE WHEN v12 < -4 THEN 15 ELSE 0 END)\n      + (CASE WHEN hour_of_day BETWEEN 0 AND 5 THEN 10 ELSE 0 END)\n      + (CASE WHEN amount = 0 THEN 10 WHEN amount > 500 THEN 5 ELSE 0 END) AS raw_score\n    FROM transactions\n),\ntiered AS (\n    SELECT *, MIN(raw_score, 100) AS risk_score,\n        CASE WHEN raw_score >= 70 THEN '1 Critical - block'\n             WHEN raw_score >= 45 THEN '2 High - challenge'\n             WHEN raw_score >= 20 THEN '3 Medium - monitor'\n             ELSE '4 Low - allow' END AS risk_tier\n    FROM scored\n)\nSELECT\n    risk_tier, COUNT(*) AS transactions,\n    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM transactions), 3) AS pct_of_volume,\n    SUM(is_fraud) AS frauds_in_tier, ROUND(100.0 * SUM(is_fraud) / COUNT(*), 3) AS fraud_rate_in_tier_pct,\n    ROUND(100.0 * SUM(is_fraud) / (SELECT SUM(is_fraud) FROM transactions), 2) AS pct_of_all_fraud_caught,\n    ROUND(AVG(risk_score), 1) AS avg_score,\n    ROUND(SUM(CASE WHEN is_fraud = 1 THEN amount ELSE 0 END), 2) AS fraud_value_in_tier\nFROM tiered\nGROUP BY risk_tier\nORDER BY risk_tier;"
+        },
+        {
+          "number": 17,
+          "title": "Threshold sweep (a gains / ROC-style curve)",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH thresholds(cut) AS (\n    VALUES (-12.0), (-10.0), (-8.0), (-6.0), (-5.0), (-4.0), (-3.0), (-2.0), (-1.0), (0.0)\n),\nswept AS (\n    SELECT\n        th.cut, SUM(CASE WHEN t.v14 < th.cut AND t.is_fraud = 1 THEN 1 ELSE 0 END) AS tp,\n        SUM(CASE WHEN t.v14 < th.cut AND t.is_fraud = 0 THEN 1 ELSE 0 END) AS fp,\n        SUM(CASE WHEN t.v14 >= th.cut AND t.is_fraud = 1 THEN 1 ELSE 0 END) AS fn\n    FROM thresholds th CROSS JOIN transactions t\n    GROUP BY th.cut\n)\nSELECT\n    cut AS v14_threshold, tp + fp AS transactions_flagged, tp AS frauds_caught,\n    fp AS false_alarms, fn AS frauds_missed, ROUND(100.0 * tp / NULLIF(tp + fp, 0), 2) AS precision_pct,\n    ROUND(100.0 * tp / NULLIF(tp + fn, 0), 2) AS recall_pct,\n    ROUND(2.0 * tp / NULLIF(2.0 * tp + fp + fn, 0), 4) AS f1_score,\n    ROUND(1.0 * fp / NULLIF(tp, 0), 1) AS false_alarms_per_catch\nFROM swept\nORDER BY cut;"
+        },
+        {
+          "number": 18,
+          "title": "Confusion matrix at the chosen operating point",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH applied AS (\n    SELECT\n        CASE WHEN v14 < -4 AND v17 < -3 THEN 1 ELSE 0 END AS predicted_fraud,\n        is_fraud AS actual_fraud,\n        amount\n    FROM transactions\n),\ncm AS (\n    SELECT\n        SUM(CASE WHEN predicted_fraud = 1 AND actual_fraud = 1 THEN 1 ELSE 0 END) AS tp,\n        SUM(CASE WHEN predicted_fraud = 1 AND actual_fraud = 0 THEN 1 ELSE 0 END) AS fp,\n        SUM(CASE WHEN predicted_fraud = 0 AND actual_fraud = 1 THEN 1 ELSE 0 END) AS fn,\n        SUM(CASE WHEN predicted_fraud = 0 AND actual_fraud = 0 THEN 1 ELSE 0 END) AS tn,\n        SUM(CASE WHEN predicted_fraud = 1 AND actual_fraud = 1 THEN amount ELSE 0 END) AS value_caught,\n        SUM(CASE WHEN predicted_fraud = 0 AND actual_fraud = 1 THEN amount ELSE 0 END) AS value_missed\n    FROM applied\n)\nSELECT\n    tp AS true_positives, fp AS false_positives, fn AS false_negatives, tn AS true_negatives,\n    ROUND(100.0 * tp / NULLIF(tp + fp, 0), 2) AS precision_pct,\n    ROUND(100.0 * tp / NULLIF(tp + fn, 0), 2) AS recall_pct,\n    ROUND(100.0 * fp / NULLIF(fp + tn, 0), 4) AS false_positive_rate_pct,\n    ROUND(2.0 * tp / NULLIF(2.0 * tp + fp + fn, 0), 4) AS f1_score,\n    ROUND(value_caught, 2) AS fraud_value_prevented, ROUND(value_missed, 2) AS fraud_value_missed,\n    ROUND(100.0 * value_caught / NULLIF(value_caught + value_missed, 0), 2) AS pct_value_prevented\nFROM cm;"
+        },
+        {
+          "number": 19,
+          "title": "Cost-benefit of running the rule",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH assumptions AS (\n    SELECT 25.0 AS review_cost_per_alert, -- analyst time per flagged txn\n           0.85 AS recovery_rate, -- share of caught fraud actually recovered\n           15.0 AS customer_friction_cost -- cost of wrongly challenging a good customer\n),\noutcome AS (\n    SELECT\n        SUM(CASE WHEN v14 < -4 AND is_fraud = 1 THEN 1 ELSE 0 END) AS tp,\n        SUM(CASE WHEN v14 < -4 AND is_fraud = 0 THEN 1 ELSE 0 END) AS fp,\n        SUM(CASE WHEN v14 < -4 AND is_fraud = 1 THEN amount ELSE 0 END) AS caught_value,\n        SUM(CASE WHEN v14 >= -4 AND is_fraud = 1 THEN amount ELSE 0 END) AS missed_value\n    FROM transactions\n)\nSELECT\n    o.tp AS frauds_caught, o.fp AS false_alarms, ROUND(o.caught_value, 2) AS fraud_value_caught,\n    ROUND(o.missed_value, 2) AS fraud_value_missed,\n    ROUND(o.caught_value * a.recovery_rate, 2) AS value_recovered,\n    ROUND((o.tp + o.fp) * a.review_cost_per_alert, 2) AS review_cost,\n    ROUND(o.fp * a.customer_friction_cost, 2) AS friction_cost,\n    ROUND(o.caught_value * a.recovery_rate - (o.tp + o.fp) * a.review_cost_per_alert\n          - o.fp * a.customer_friction_cost, 2) AS net_benefit,\n    ROUND( (o.caught_value * a.recovery_rate)\n           / NULLIF((o.tp + o.fp) * a.review_cost_per_alert + o.fp * a.customer_friction_cost, 0), 2) AS benefit_cost_ratio,\n    CASE WHEN o.caught_value * a.recovery_rate\n              > (o.tp + o.fp) * a.review_cost_per_alert + o.fp * a.customer_friction_cost\n         THEN 'Deploy - positive return' ELSE 'Do not deploy - costs exceed recovery' END AS recommendation\nFROM outcome o CROSS JOIN assumptions a;"
+        },
+        {
+          "number": 20,
+          "title": "ML-ready feature export",
+          "level": "Advanced",
+          "skill": "Advanced-friendly",
+          "sql": "WITH stats AS (\n    SELECT AVG(amount) AS mean_amt,\n           sqrt( (SUM(amount*amount) - SUM(amount)*SUM(amount)/COUNT(*)) / NULLIF(COUNT(*)-1,0) ) AS sd_amt\n    FROM transactions\n)\nSELECT\n    t.transaction_id, ROUND(t.amount, 2) AS amount,\n    ROUND((t.amount - s.mean_amt) / NULLIF(s.sd_amt, 0), 4) AS amount_zscore,\n    ROUND(LOG(1 + t.amount), 4) AS log_amount, t.hour_of_day,\n    CASE WHEN t.hour_of_day BETWEEN 0 AND 5 THEN 1 ELSE 0 END AS is_overnight,\n    CASE WHEN t.amount = 0 THEN 1 ELSE 0 END AS is_zero_amount,\n    ROUND(t.v14, 4) AS v14, ROUND(t.v17, 4) AS v17, ROUND(t.v12, 4) AS v12, ROUND(t.v10, 4) AS v10,\n    CASE WHEN t.v14 < -4 THEN 1 ELSE 0 END AS v14_flag,\n    CASE WHEN t.v17 < -4 THEN 1 ELSE 0 END AS v17_flag,\n    (CASE WHEN t.v14 < -4 THEN 1 ELSE 0 END)\n      + (CASE WHEN t.v17 < -4 THEN 1 ELSE 0 END)\n      + (CASE WHEN t.v12 < -4 THEN 1 ELSE 0 END)\n      + (CASE WHEN t.hour_of_day BETWEEN 0 AND 5 THEN 1 ELSE 0 END) AS risk_flag_count,\n    t.is_fraud AS target_label\nFROM transactions t CROSS JOIN stats s\nWHERE t.is_fraud = 1\n   OR (CASE WHEN t.v14 < -4 THEN 1 ELSE 0 END)\n      + (CASE WHEN t.v17 < -4 THEN 1 ELSE 0 END)\n      + (CASE WHEN t.v12 < -4 THEN 1 ELSE 0 END) >= 2\nORDER BY t.is_fraud DESC, risk_flag_count DESC\nLIMIT 5000;"
+        },
+        {
+          "number": 21,
+          "title": "Rank ALL 28 components by class separation",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "WITH stats AS (\n    SELECT\n        feature, AVG(CASE WHEN is_fraud = 0 THEN value END) AS legit_mean,\n        AVG(CASE WHEN is_fraud = 1 THEN value END) AS fraud_mean, COUNT(*) AS observations,\n        sqrt( (SUM(value*value) - SUM(value)*SUM(value)/COUNT(*)) / NULLIF(COUNT(*)-1,0) ) AS sd_all\n    FROM transaction_features\n    GROUP BY feature\n)\nSELECT\n    feature, ROUND(legit_mean, 4) AS legit_mean, ROUND(fraud_mean, 4) AS fraud_mean,\n    ROUND(ABS(fraud_mean - legit_mean), 4) AS separation, ROUND(sd_all, 4) AS overall_sd,\n    ROUND(ABS(fraud_mean - legit_mean) / NULLIF(sd_all, 0), 4) AS effect_size,\n    RANK() OVER (ORDER BY ABS(fraud_mean - legit_mean) / NULLIF(sd_all, 0) DESC) AS rank_by_effect,\n    CASE WHEN ABS(fraud_mean - legit_mean) / NULLIF(sd_all, 0) > 2.0 THEN 'Very strong'\n         WHEN ABS(fraud_mean - legit_mean) / NULLIF(sd_all, 0) > 1.0 THEN 'Strong'\n         WHEN ABS(fraud_mean - legit_mean) / NULLIF(sd_all, 0) > 0.5 THEN 'Moderate'\n         WHEN ABS(fraud_mean - legit_mean) / NULLIF(sd_all, 0) > 0.2 THEN 'Weak'\n         ELSE 'Negligible - drop from the model' END AS usefulness\nFROM stats\nORDER BY effect_size DESC;"
+        },
+        {
+          "number": 22,
+          "title": "Which components separate cleanly, and which merely look different?",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "WITH ranked AS (\n    SELECT feature, value, is_fraud,\n           ROW_NUMBER() OVER (PARTITION BY feature, is_fraud ORDER BY value) AS rn,\n           COUNT(*) OVER (PARTITION BY feature, is_fraud) AS n\n    FROM transaction_features\n),\npct AS (\n    SELECT feature, is_fraud, n,\n           MAX(CASE WHEN rn = CAST(0.01*(n-1)+1 AS INTEGER) THEN value END) AS p01,\n           MAX(CASE WHEN rn = CAST(0.50*(n-1)+1 AS INTEGER) THEN value END) AS median,\n           MAX(CASE WHEN rn = CAST(0.99*(n-1)+1 AS INTEGER) THEN value END) AS p99\n    FROM ranked GROUP BY feature, is_fraud, n\n)\nSELECT\n    l.feature, ROUND(l.p01, 3) AS legit_p01, ROUND(l.median, 3) AS legit_median,\n    ROUND(l.p99, 3) AS legit_p99, ROUND(f.median, 3) AS fraud_median,\n    ROUND(ABS(f.median - l.median), 3) AS median_gap,\n    CASE WHEN f.median BETWEEN l.p01 AND l.p99\n         THEN 'Overlaps - weak on its own'\n         ELSE 'Separates cleanly' END AS discrimination\nFROM pct l\nJOIN pct f ON l.feature = f.feature AND l.is_fraud = 0 AND f.is_fraud = 1\nORDER BY median_gap DESC;"
+        },
+        {
+          "number": 23,
+          "title": "Rules built from the features the data chose, not the famous ones",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "WITH rules AS (\n    SELECT 'V14<-4 AND V17<-4' AS rule, CASE WHEN v14 < -4 AND v17 < -4 THEN 1 ELSE 0 END AS flag, is_fraud FROM transactions\n    UNION ALL SELECT 'V3<-4 AND V14<-4', CASE WHEN v3 < -4 AND v14 < -4 THEN 1 ELSE 0 END, is_fraud FROM transactions\n    UNION ALL SELECT 'V3<-4 AND V17<-4', CASE WHEN v3 < -4 AND v17 < -4 THEN 1 ELSE 0 END, is_fraud FROM transactions\n    UNION ALL SELECT 'V10<-4 AND V12<-4', CASE WHEN v10 < -4 AND v12 < -4 THEN 1 ELSE 0 END, is_fraud FROM transactions\n    UNION ALL SELECT 'V3,V14,V17 all <-3', CASE WHEN v3 < -3 AND v14 < -3 AND v17 < -3 THEN 1 ELSE 0 END, is_fraud FROM transactions\n    UNION ALL SELECT 'any 3 of 6 strong features < -3',\n        CASE WHEN (CASE WHEN v3 < -3 THEN 1 ELSE 0 END)\n                + (CASE WHEN v10 < -3 THEN 1 ELSE 0 END)\n                + (CASE WHEN v12 < -3 THEN 1 ELSE 0 END)\n                + (CASE WHEN v14 < -3 THEN 1 ELSE 0 END)\n                + (CASE WHEN v16 < -3 THEN 1 ELSE 0 END)\n                + (CASE WHEN v17 < -3 THEN 1 ELSE 0 END) >= 3\n             THEN 1 ELSE 0 END, is_fraud FROM transactions\n),\nm AS (\n    SELECT rule,\n        SUM(CASE WHEN flag = 1 AND is_fraud = 1 THEN 1 ELSE 0 END) AS tp,\n        SUM(CASE WHEN flag = 1 AND is_fraud = 0 THEN 1 ELSE 0 END) AS fp,\n        SUM(CASE WHEN flag = 0 AND is_fraud = 1 THEN 1 ELSE 0 END) AS fn\n    FROM rules GROUP BY rule\n)\nSELECT\n    rule, tp AS frauds_caught, fp AS false_alarms, fn AS frauds_missed,\n    ROUND(100.0 * tp / NULLIF(tp + fp, 0), 2) AS precision_pct,\n    ROUND(100.0 * tp / NULLIF(tp + fn, 0), 2) AS recall_pct,\n    ROUND(2.0 * tp / NULLIF(2.0 * tp + fp + fn, 0), 4) AS f1_score,\n    RANK() OVER (ORDER BY 2.0 * tp / NULLIF(2.0 * tp + fp + fn, 0) DESC) AS rank_by_f1\nFROM m\nORDER BY f1_score DESC;"
+        },
+        {
+          "number": 24,
+          "title": "Full-width profile of every confirmed fraud",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "SELECT\n    transaction_id, seconds_elapsed, hour_of_day, day_number, amount,\n    ROUND(v1,3) AS v1, ROUND(v2,3) AS v2, ROUND(v3,3) AS v3, ROUND(v4,3) AS v4, ROUND(v5,3) AS v5,\n    ROUND(v6,3) AS v6, ROUND(v7,3) AS v7, ROUND(v8,3) AS v8, ROUND(v9,3) AS v9, ROUND(v10,3) AS v10,\n    ROUND(v11,3) AS v11, ROUND(v12,3) AS v12, ROUND(v13,3) AS v13, ROUND(v14,3) AS v14,\n    ROUND(v15,3) AS v15, ROUND(v16,3) AS v16, ROUND(v17,3) AS v17, ROUND(v18,3) AS v18,\n    ROUND(v19,3) AS v19, ROUND(v20,3) AS v20, ROUND(v21,3) AS v21, ROUND(v22,3) AS v22,\n    ROUND(v23,3) AS v23, ROUND(v24,3) AS v24, ROUND(v25,3) AS v25, ROUND(v26,3) AS v26,\n    ROUND(v27,3) AS v27, ROUND(v28,3) AS v28\nFROM transactions\nWHERE is_fraud = 1\nORDER BY amount DESC;"
+        },
+        {
+          "number": 25,
+          "title": "ML export using every component",
+          "level": "Extended",
+          "skill": "Extended-friendly",
+          "sql": "WITH s AS (\n    SELECT AVG(amount) AS mean_amt,\n           sqrt( (SUM(amount*amount) - SUM(amount)*SUM(amount)/COUNT(*)) / NULLIF(COUNT(*)-1,0) ) AS sd_amt\n    FROM transactions\n),\nflagged AS (\n    SELECT t.*,\n        (CASE WHEN t.v3 < -3 THEN 1 ELSE 0 END) + (CASE WHEN t.v10 < -3 THEN 1 ELSE 0 END)\n      + (CASE WHEN t.v12 < -3 THEN 1 ELSE 0 END) + (CASE WHEN t.v14 < -3 THEN 1 ELSE 0 END)\n      + (CASE WHEN t.v16 < -3 THEN 1 ELSE 0 END) + (CASE WHEN t.v17 < -3 THEN 1 ELSE 0 END)\n        AS strong_feature_flags\n    FROM transactions t\n)\nSELECT\n    f.transaction_id, f.amount, ROUND((f.amount - s.mean_amt) / NULLIF(s.sd_amt, 0), 4) AS amount_zscore,\n    f.hour_of_day, f.day_number,\n    CASE WHEN f.hour_of_day BETWEEN 0 AND 5 THEN 1 ELSE 0 END AS is_overnight,\n    CASE WHEN f.amount = 0 THEN 1 ELSE 0 END AS is_zero_amount,\n    f.v1, f.v2, f.v3, f.v4, f.v5, f.v6, f.v7, f.v8, f.v9, f.v10, f.v11, f.v12, f.v13, f.v14,\n    f.v15, f.v16, f.v17, f.v18, f.v19, f.v20, f.v21, f.v22, f.v23, f.v24, f.v25, f.v26, f.v27, f.v28,\n    f.strong_feature_flags,\n    f.is_fraud AS target_label\nFROM flagged f CROSS JOIN s\nWHERE f.is_fraud = 1 OR f.strong_feature_flags >= 2\nORDER BY f.is_fraud DESC, f.strong_feature_flags DESC\nLIMIT 5000;"
+        }
+      ]
+    }
+  ]
+}

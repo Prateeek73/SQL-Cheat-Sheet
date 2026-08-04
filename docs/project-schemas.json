@@ -1,0 +1,174 @@
+{
+  "projects": [
+    {
+      "slug": "ecommerce",
+      "summary": "Core order, line-item, product and international customer tables used in the ecommerce questions.",
+      "tables": [
+        {
+          "table": "orders",
+          "columns": [
+            { "name": "order_id", "type": "TEXT", "key": "primary" },
+            { "name": "order_date", "type": "TEXT" },
+            { "name": "status", "type": "TEXT" },
+            { "name": "order_amount", "type": "REAL" }
+          ]
+        },
+        {
+          "table": "order_lines",
+          "columns": [
+            { "name": "(order_id, sku)", "type": "COMPOSITE", "key": "conjunction" },
+            { "name": "order_id", "type": "TEXT", "key": "foreign", "references": "orders.order_id" },
+            { "name": "sku", "type": "TEXT", "key": "foreign", "references": "products.sku" },
+            { "name": "qty", "type": "INTEGER" },
+            { "name": "amount", "type": "REAL" }
+          ]
+        },
+        {
+          "table": "products",
+          "columns": [
+            { "name": "sku", "type": "TEXT", "key": "primary" },
+            { "name": "design_no", "type": "TEXT" },
+            { "name": "product_category", "type": "TEXT" },
+            { "name": "stock", "type": "INTEGER" }
+          ]
+        },
+        {
+          "table": "intl_sales",
+          "columns": [
+            { "name": "customer", "type": "TEXT", "key": "foreign", "references": "intl_customers.customer_name" },
+            { "name": "sku", "type": "TEXT" },
+            { "name": "gross_amt", "type": "REAL" }
+          ]
+        },
+        {
+          "table": "intl_customers",
+          "columns": [
+            { "name": "customer_name", "type": "TEXT", "key": "primary" },
+            { "name": "sale_lines", "type": "INTEGER" },
+            { "name": "lifetime_value", "type": "REAL" }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "churn",
+      "summary": "Customer and billing tables that feed the churn and retention questions.",
+      "tables": [
+        {
+          "table": "customers",
+          "columns": [
+            { "name": "customer_id", "type": "TEXT", "key": "primary" },
+            { "name": "contract_type", "type": "TEXT" },
+            { "name": "internet_service", "type": "TEXT" },
+            { "name": "payment_method", "type": "TEXT" }
+          ]
+        },
+        {
+          "table": "billing",
+          "columns": [
+            { "name": "customer_id", "type": "TEXT", "key": "foreign", "references": "customers.customer_id" },
+            { "name": "monthly_charges", "type": "REAL" },
+            { "name": "total_charges", "type": "REAL" }
+          ]
+        },
+        {
+          "table": "services",
+          "columns": [
+            { "name": "customer_id", "type": "TEXT", "key": "foreign", "references": "customers.customer_id" },
+            { "name": "online_security", "type": "TEXT" },
+            { "name": "tech_support", "type": "TEXT" },
+            { "name": "streaming_tv", "type": "TEXT" }
+          ]
+        },
+        {
+          "table": "churn",
+          "columns": [
+            { "name": "customer_id", "type": "TEXT", "key": "primary" },
+            { "name": "churn_status", "type": "TEXT" },
+            { "name": "derived_signup_month", "type": "TEXT" }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "hr",
+      "summary": "Employee, performance and location data used for pay and attrition questions.",
+      "tables": [
+        {
+          "table": "employees",
+          "columns": [
+            { "name": "employee_id", "type": "INTEGER", "key": "primary" },
+            { "name": "employee_name", "type": "TEXT" },
+            { "name": "department", "type": "TEXT" },
+            { "name": "salary", "type": "INTEGER" }
+          ]
+        },
+        {
+          "table": "performance",
+          "columns": [
+            { "name": "employee_id", "type": "INTEGER", "key": "foreign", "references": "employees.employee_id" },
+            { "name": "performance_score", "type": "REAL" },
+            { "name": "review_date", "type": "TEXT" }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "food-delivery",
+      "summary": "Order, customer and delivery context tables for the delivery analytics questions.",
+      "tables": [
+        {
+          "table": "orders",
+          "columns": [
+            { "name": "order_id", "type": "TEXT", "key": "primary" },
+            { "name": "customer_id", "type": "TEXT" },
+            { "name": "order_time", "type": "TEXT" },
+            { "name": "order_value", "type": "REAL" }
+          ]
+        },
+        {
+          "table": "customers",
+          "columns": [
+            { "name": "customer_id", "type": "TEXT", "key": "primary" },
+            { "name": "location", "type": "TEXT" },
+            { "name": "preferred_cuisine", "type": "TEXT" },
+            { "name": "loyalty_program", "type": "TEXT" }
+          ]
+        },
+        {
+          "table": "deliveries",
+          "columns": [
+            { "name": "order_id", "type": "TEXT", "key": "foreign", "references": "orders.order_id" },
+            { "name": "delivery_distance", "type": "REAL" },
+            { "name": "delivery_delay", "type": "REAL" },
+            { "name": "route_type", "type": "TEXT" }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "fraud",
+      "summary": "Transaction features and labels for the fraud detection exercises.",
+      "tables": [
+        {
+          "table": "transactions",
+          "columns": [
+            { "name": "transaction_id", "type": "INTEGER", "key": "primary" },
+            { "name": "time", "type": "REAL" },
+            { "name": "amount", "type": "REAL" },
+            { "name": "class", "type": "INTEGER" }
+          ]
+        },
+        {
+          "table": "features",
+          "columns": [
+            { "name": "transaction_id", "type": "INTEGER", "key": "foreign", "references": "transactions.transaction_id" },
+            { "name": "v1", "type": "REAL" },
+            { "name": "v2", "type": "REAL" },
+            { "name": "v28", "type": "REAL" }
+          ]
+        }
+      ]
+    }
+  ]
+}
