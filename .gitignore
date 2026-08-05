@@ -13,12 +13,19 @@
 *.sqlite3
 *.csv
 *.zip
-*.agents
-*.claude
-
 
 # Generated report - regenerate with: python scripts/run.py
-docs/RESULTS.md
+/docs/RESULTS.md
+
+# Local tool state. Anchored to the repo root: the previous unanchored globs
+# matched these directories only by accident, and would also have caught any
+# file whose name happened to end the same way, anywhere in the tree.
+# DESIGN.md and PRODUCT.md are generated output too - kept locally.
+/.claude/
+/.agents/
+/.impeccable/
+/DESIGN.md
+/PRODUCT.md
 
 # Python
 __pycache__/
@@ -27,8 +34,7 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
-# Local tooling / editor state
-.claude/settings.local.json
+# Editor / OS
 .vscode/
 .idea/
 .DS_Store
