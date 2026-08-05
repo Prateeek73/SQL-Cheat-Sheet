@@ -1,0 +1,242 @@
+:root {
+  --bg:#fbfaf9; --fg:#1a1917; --mut:#6b6862; --line:#e5e1db; --card:#fff;
+  --accent:#b8532a; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 12px rgba(0,0,0,.04);
+  --pk:#c8952a; --fk:#4a9d6e; --cj:#7a5cc4;
+  --syn-c:#3f7d3a; --syn-k:#b8532a; --syn-f:#7a4bb8; --syn-s:#8a6a1f; --syn-n:#2f6f8f;
+  /* inks that sit on a saturated fill (accent / badges); theme-invariant by design */
+  --on-accent:#fff; --on-key:#1a1917; --on-relation:#0d1f16;
+  /* type stacks */
+  --font-sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* type-size scale (see DESIGN.md typography) */
+  --fs-display:clamp(1.6rem,3vw,2.15rem); --fs-stat:1.45rem; --fs-title:1.4rem;
+  --fs-md:.9rem; --fs-sm:.8rem; --fs-xs:.72rem; --fs-2xs:.66rem; --fs-3xs:.58rem;
+  /* radius ladder (see DESIGN.md) */
+  --r-xs:4px; --r-sm:7px; --r-md:8px; --r-lg:10px; --r-xl:11px; --r-pill:999px; --r-circle:50%;
+  /* motion */
+  --dur:.12s; --dur-slow:.15s; --ease:ease;
+}
+@media (prefers-color-scheme:dark) {
+  :root { --bg:#161513; --fg:#eceae6; --mut:#9a958c; --line:#2c2a27; --card:#1e1d1a;
+    --accent:#e08155; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 12px rgba(0,0,0,.25);
+    --pk:#d8a657; --fk:#6ec49a; --cj:#a78bfa;
+    --syn-c:#7fb069; --syn-k:#e08155; --syn-f:#b79bea; --syn-s:#d8a657; --syn-n:#6fb3cf; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0; background:var(--bg); color:var(--fg);
+  font:16px/1.6 var(--font-sans);
+  -webkit-font-smoothing:antialiased; }
+::selection { background:var(--accent); color:var(--on-accent); }
+:where(a,button,summary):focus-visible { outline:2px solid var(--accent); outline-offset:3px;
+  border-radius:6px; }
+/* skip link: off-screen until focused, then slides into view */
+.skip { position:absolute; left:.5rem; top:-3.5rem; z-index:10; padding:.5rem .9rem;
+  background:var(--accent); color:var(--on-accent); border-radius:var(--r-sm);
+  text-decoration:none; font-size:var(--fs-sm); font-weight:600;
+  transition:top var(--dur) var(--ease); }
+.skip:focus { top:.5rem; }
+@media (prefers-reduced-motion:reduce) {
+  html { scroll-behavior:auto; }
+  *,*::before,*::after { transition-duration:.01ms !important; animation-duration:.01ms !important; }
+  .card:hover { transform:none; }
+}
+/* shared thin scrollbar for horizontal overflow boxes */
+.scroll { scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+.scroll::-webkit-scrollbar { height:9px; }
+.scroll::-webkit-scrollbar-thumb { background:var(--line); border-radius:5px; }
+/* the scroll boxes are keyboard-focusable (tabindex=0) so wide tables/SQL scroll by keyboard */
+.scroll:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+/* max-width caps the reading column so wide monitors don't over-stretch the
+   grid and schema tables; 100rem still fits the 6-up beginner grid (~95rem). */
+.wrap { max-width:100rem; margin:0 auto; padding:1.75rem clamp(1rem,3vw,2.25rem) 4rem; }
+h1 { font-size:var(--fs-display); line-height:1.15; margin:0 0 .35rem; letter-spacing:-.02em; }
+.lede { color:var(--mut); max-width:66ch; margin:0; font-size:var(--fs-md); }
+.loading { color:var(--mut); padding:3rem 0; }
+.pagehead { display:flex; flex-wrap:wrap; align-items:flex-start;
+  justify-content:space-between; gap:1rem 2.5rem; }
+.intro { flex:1 1 34ch; min-width:0; }
+.tot { flex:0 0 auto; display:flex; gap:1.9rem; flex-wrap:wrap; }
+.tot div { font-size:var(--fs-stat); font-weight:650; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.tot span { display:block; font-size:var(--fs-sm); font-weight:400; color:var(--mut);
+  text-transform:uppercase; letter-spacing:.08em; }
+.controlbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+  gap:.6rem 1rem; margin:1rem 0 1.1rem; }
+.toolbar { display:flex; gap:.4rem; }
+.tbtn { font:inherit; font-size:var(--fs-sm); font-weight:550; padding:.32rem .7rem; cursor:pointer;
+  color:var(--mut); background:var(--card); border:1px solid var(--line); border-radius:var(--r-sm);
+  transition:color var(--dur) var(--ease),border-color var(--dur) var(--ease); }
+.tbtn:hover { color:var(--accent); border-color:var(--accent); }
+
+/* ---- tabs ---- */
+.tabs { display:flex; flex-wrap:wrap; gap:.3rem; padding:.3rem;
+  margin:0 0 0 auto; width:fit-content; max-width:100%;
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r-xl); box-shadow:var(--shadow); }
+.tab { flex:0 0 auto; display:flex; align-items:center; gap:.45rem; padding:.5rem .75rem;
+  border:0; border-radius:var(--r-md); background:transparent; color:var(--mut); font:inherit;
+  font-size:var(--fs-md); font-weight:550; cursor:pointer; transition:background var(--dur),color var(--dur); }
+.tab:hover { background:var(--bg); color:var(--fg); }
+.tab[aria-selected="true"] { background:var(--accent); color:var(--on-accent); }
+.tnum { display:grid; place-items:center; width:1.3rem; height:1.3rem; border-radius:var(--r-circle);
+  background:var(--line); color:var(--fg); font-size:var(--fs-xs); font-weight:700; flex:none; }
+.tab[aria-selected="true"] .tnum { background:rgba(255,255,255,.25); color:var(--on-accent); }
+.tname { white-space:nowrap; }
+.tcount { font-size:var(--fs-2xs); opacity:.7; font-variant-numeric:tabular-nums; }
+.project[hidden] { display:none; }
+
+/* ---- project header ---- */
+.phead { display:flex; align-items:center; gap:.85rem; flex-wrap:wrap;
+  padding-bottom:.7rem; border-bottom:2px solid var(--fg); }
+.pnum { width:2.4rem; height:2.4rem; flex:none; border-radius:var(--r-circle); background:var(--accent);
+  color:var(--on-accent); display:grid; place-items:center; font-weight:700; }
+.phead h2 { margin:0; font-size:var(--fs-title); letter-spacing:-.01em; }
+.meta { margin:.15rem 0 0; font-size:var(--fs-md); color:var(--mut); }
+.meta code { color:var(--accent); } .kag { opacity:.75; }
+
+/* ---- collapsible panels ---- */
+details.panel { margin:.7rem 0 0; border:1px solid var(--line); border-radius:var(--r-lg); background:var(--card); }
+details.panel > summary { cursor:pointer; padding:.65rem 1rem; font-size:var(--fs-md); font-weight:600;
+  list-style:none; user-select:none; }
+details.panel > summary::-webkit-details-marker { display:none; }
+details.panel > summary::before { content:"\25B8"; display:inline-block; margin-right:.5rem;
+  color:var(--accent); transition:transform var(--dur-slow) var(--ease); }
+details.panel[open] > summary::before { transform:rotate(90deg); }
+.hint { font-weight:400; color:var(--mut); font-size:var(--fs-sm); }
+
+/* ---- schema ---- */
+.legend { display:flex; flex-wrap:wrap; align-items:center; gap:.35rem .75rem;
+  padding:0 1rem .7rem; font-size:var(--fs-2xs); color:var(--mut); }
+.tables { display:flex; flex-wrap:wrap; gap:.9rem; padding:0 1rem 1rem; align-items:flex-start; }
+/* min() keeps a wide card from pushing past the panel on a narrow screen */
+.tcard { flex:1 1 min(17rem,100%); min-width:0; max-width:100%;
+  border:1px solid var(--line); border-radius:9px; background:var(--bg); overflow:hidden; }
+.tcard.raw { opacity:.72; }
+.tcard > .thead { margin:0; padding:.55rem .7rem; font-size:var(--fs-sm); font-weight:700;
+  font-family:var(--font-mono); background:var(--card);
+  border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:.6rem; }
+.tcard > .thead small { font-weight:400; color:var(--mut); font-size:var(--fs-2xs); font-family:inherit;
+  font-variant-numeric:tabular-nums; }
+/* Wide tables split their field list rather than growing very tall.
+   Multi-column keeps the reading order down each column. */
+.tcard.split2 { flex-basis:min(27rem,100%); }
+.tcard.split3 { flex-basis:min(38rem,100%); }
+.tcard.split2 .cols { column-count:2; }
+.tcard.split3 .cols { column-count:3; }
+/* column-rule draws the divider between columns; nth-child cannot, because
+   multi-column fills downwards so the Nth item is not the Nth visual column */
+.tcard .cols { column-gap:0; column-rule:1px solid var(--line); }
+.col { display:flex; align-items:center; gap:.4rem .4rem; flex-wrap:wrap; padding:.3rem .7rem;
+  border-bottom:1px solid var(--line); font-size:var(--fs-xs);
+  break-inside:avoid; -webkit-column-break-inside:avoid;
+  font-family:var(--font-mono); }
+.tcard .cols > .col:last-child { border-bottom:0; }
+/* a long name truncates instead of shoving the badge out of the card */
+.col .cname { font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; }
+.col .ctype { color:var(--mut); font-size:var(--fs-2xs); flex:none; }
+/* the FK target gets its own line rather than competing for width */
+.col .ref { flex-basis:100%; color:var(--mut); font-size:var(--fs-2xs); margin:.1rem 0 0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* explicit order, because `ref` sits before `badge` in the DOM and a sibling
+   selector cannot reach backwards: badge stays on line 1, ref drops below */
+.badge { margin-left:auto; order:2; font-size:var(--fs-3xs); font-weight:700; letter-spacing:.04em;
+  padding:.08rem .3rem; border-radius:var(--r-xs); flex:none; }
+.col .ref { order:3; }
+.col.pk { background:color-mix(in srgb,var(--pk) 12%,transparent); }
+.col.pk .cname { color:var(--pk); }
+.col .badge:first-of-type { margin-left:auto; }
+.col.pk .badge { background:var(--pk); color:var(--on-key); }
+.col.fk { background:color-mix(in srgb,var(--fk) 12%,transparent); }
+.col.fk .cname { color:var(--fk); }
+.col.fk .badge { background:var(--fk); color:var(--on-relation); }
+/* both roles at once: tint stays gold, but each badge keeps its own colour */
+.col.pk.fk { background:color-mix(in srgb,var(--pk) 10%,transparent); }
+.col.pk.fk .cname { color:var(--pk); }
+.col.pk.fk .badge:first-of-type { background:var(--pk); color:var(--on-key); }
+.col.pk.fk .badge:last-of-type { background:var(--fk); color:var(--on-relation); }
+.col.uq .cname { color:var(--cj); }
+.col.uq .badge { background:var(--cj); color:var(--on-accent); }
+.chipdemo { padding:.05rem .35rem; border-radius:var(--r-xs); font-size:var(--fs-3xs); font-weight:700;
+  font-family:var(--font-mono); }
+
+/* ---- level header + skills ---- */
+/* Level colour is carried by the heading itself and a small dot, rather than a
+   slab down the side - same information, less furniture. */
+.lvlhead { display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap; margin:1.6rem 0 .7rem; }
+.lvlhead h3 { margin:0; font-size:var(--fs-sm); text-transform:uppercase; letter-spacing:.1em;
+  display:flex; align-items:baseline; gap:.5rem; color:var(--lvl,var(--accent)); }
+.lvlhead h3::before { content:""; width:.45rem; height:.45rem; border-radius:var(--r-circle); flex:none;
+  align-self:center; background:var(--lvl,var(--accent)); }
+.lvl-beginner { --lvl:#4a9d6e; } .lvl-intermediate { --lvl:#c8952a; }
+.lvl-advanced { --lvl:#b8532a; } .lvl-extended { --lvl:#7a5cc4; }
+.count { font-weight:400; color:var(--mut); text-transform:none; letter-spacing:0; font-size:var(--fs-sm);
+  font-variant-numeric:tabular-nums; }
+.skills { display:flex; flex-wrap:wrap; gap:.35rem; }
+.chip { font-size:var(--fs-xs); padding:.15rem .55rem; border:1px solid var(--line);
+  border-radius:var(--r-pill); color:var(--mut); background:var(--card); white-space:nowrap; }
+
+/* ---- question cards: columns fall as the word budget rises ---- */
+.grid { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; }
+.grid > .card { flex:0 1 calc(16.666% - .84rem); min-width:15rem; }
+.grid.cols4 > .card { flex:0 1 calc(25% - .75rem); min-width:18rem; }
+.grid.cols3 > .card { flex:0 1 calc(33.333% - .667rem); min-width:20rem; }
+.grid.cols2 > .card { flex:0 1 calc(50% - .5rem); min-width:22rem; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:var(--r-lg);
+  padding:.8rem .9rem .85rem; text-decoration:none; color:inherit; box-shadow:var(--shadow);
+  display:flex; flex-direction:column; transition:transform var(--dur),border-color var(--dur); }
+.card:hover { transform:translateY(-2px); border-color:var(--accent); }
+.qn { font-size:var(--fs-xs); font-weight:700; color:var(--accent); letter-spacing:.06em; }
+.q { margin:.25rem 0 .6rem; font-size:var(--fs-md); line-height:1.5; flex:1; }
+.file { font-size:var(--fs-2xs); color:var(--mut); font-family:var(--font-mono);
+  display:flex; justify-content:space-between; align-items:baseline; gap:.5rem; }
+/* muted at rest (no opacity-dimming), warms to accent on hover */
+.go { color:var(--mut); font-weight:600; white-space:nowrap; }
+.card:hover .go { color:var(--accent); }
+
+/* ---- SQL + result, side by side ---- */
+.rq { padding:.6rem 1rem 1rem; border-radius:var(--r-md); scroll-margin-top:1rem; }
+/* a ledger rule separates consecutive query blocks stacked in one panel */
+.rq + .rq { border-top:1px solid var(--line); margin-top:.4rem; padding-top:1rem; }
+.rq h4 { margin:.3rem 0 .2rem; font-size:var(--fs-sm); font-weight:700; color:var(--accent);
+  font-family:var(--font-mono); }
+.rmeta { font-weight:400; color:var(--fg); font-family:inherit; }
+.rsrc { font-size:var(--fs-2xs); color:var(--mut); margin-bottom:.45rem;
+  font-family:var(--font-mono);
+  display:flex; flex-wrap:wrap; gap:.5rem; align-items:baseline; }
+.srclink { color:var(--accent); text-decoration:none; font-weight:600; }
+.srclink:hover { text-decoration:underline; }
+.rqbody { display:flex; flex-wrap:wrap; gap:.7rem; align-items:flex-start; }
+.rqbody > * { flex:1 1 30rem; min-width:0; }
+pre.sql { margin:0; padding:.7rem .85rem; overflow-x:auto; tab-size:2; background:var(--bg);
+  border:1px solid var(--line); border-radius:var(--r-sm);
+  font-size:var(--fs-xs); line-height:1.55; white-space:pre; color:var(--fg);
+  font-family:var(--font-mono); }
+pre.sql .c { color:var(--syn-c); }
+pre.sql .c.q1 { background:color-mix(in srgb,var(--accent) 22%,transparent); color:var(--fg);
+  font-weight:700; padding:.05rem .35rem; border-radius:var(--r-xs); }
+pre.sql .k { color:var(--syn-k); font-weight:600; }
+pre.sql .f { color:var(--syn-f); }
+pre.sql .s { color:var(--syn-s); }
+pre.sql .n { color:var(--syn-n); }
+.rq.flash { animation:flash 1.4s ease-out; }
+@keyframes flash { from { background:color-mix(in srgb,var(--accent) 18%,transparent); }
+                   to { background:transparent; } }
+.tblwrap { overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--bg); }
+table.res { border-collapse:collapse; font-size:var(--fs-xs); white-space:nowrap; min-width:100%;
+  font-family:var(--font-mono); }
+table.res th { text-align:left; padding:.4rem .6rem; border-bottom:1px solid var(--line);
+  background:var(--card); font-weight:650; }
+table.res td { padding:.32rem .6rem; border-bottom:1px solid var(--line); color:var(--mut); }
+table.res tbody tr:last-child td { border-bottom:0; }
+table.res tbody tr:hover td { background:var(--card); color:var(--fg); }
+
+footer { margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--line);
+  color:var(--mut); font-size:var(--fs-md); }
+footer code { font-size:.9em; }
+
+@media print {
+  .tabs,.toolbar,.skip { display:none !important; }
+  .project[hidden] { display:block !important; }
+  .card,.rq,.tcard { break-inside:avoid; }
+  body { background:#fff; color:#000; }
+}

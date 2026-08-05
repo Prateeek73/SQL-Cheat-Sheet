@@ -121,6 +121,11 @@ def main() -> int:
             if derive is not None and hasattr(derive, "RECIPES"):
                 recipe = derive.RECIPES.get(project)
                 if recipe:
+                    # A rebuild drops and recreates the derived tables. Once the
+                    # keys from a previous run exist, dropping a parent trips its
+                    # children's foreign keys, so enforcement is off while we
+                    # rebuild; apply_keys turns it back on and verifies.
+                    conn.execute("PRAGMA foreign_keys = OFF")
                     made = recipe(conn, tables)
                     for name in made:
                         n = conn.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]

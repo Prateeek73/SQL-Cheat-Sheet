@@ -2,8 +2,10 @@
 #   python scripts/fetch.py && python scripts/build.py
 # Excluded by directory AND by extension, so a stray .db written anywhere
 # else cannot be staged by accident.
-data/
-db/
+# leading slash matters: a bare "data/" would also swallow docs/data/,
+# which is the site's content and must be committed
+/data/
+/db/
 *.db
 *.db-wal
 *.db-shm

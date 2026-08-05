@@ -448,6 +448,11 @@ KEYS: dict[str, dict[str, tuple[str | None, list[tuple[str, str, str]]]]] = {
         "intl_sales":     ("sale_id", [("customer", "intl_customers", "customer_name")]),
         "pricing":        ("sku", []),
         "channel_prices": (None, [("sku", "pricing", "sku")]),
+        # no keys of their own, listed so the rebuild gives their computed
+        # columns a declared type instead of leaving them blank
+        "geography":       (None, []),
+        "warehouse_rates": (None, []),
+        "expenses":        (None, []),
     },
     "project_2_churn": {
         "customers": ("customer_id", []),
@@ -474,6 +479,24 @@ KEYS: dict[str, dict[str, tuple[str | None, list[tuple[str, str, str]]]]] = {
 }
 
 
+_SNIFF = {"integer": "INTEGER", "real": "REAL", "text": "TEXT", "blob": "BLOB"}
+
+
+def _sniff(conn: sqlite3.Connection, table: str, col: str) -> str:
+    """Infer a column's type from its stored values.
+
+    Preference order matters: a column holding both integers and reals is REAL,
+    and anything holding text is TEXT, so we take the widest type present.
+    """
+    kinds = {r[0] for r in conn.execute(
+        f'SELECT DISTINCT typeof("{col}") FROM "{table}" '
+        f'WHERE "{col}" IS NOT NULL LIMIT 8')}
+    for kind in ("text", "blob", "real", "integer"):
+        if kind in kinds:
+            return _SNIFF[kind]
+    return "TEXT"
+
+
 def apply_keys(conn: sqlite3.Connection, project: str) -> tuple[int, int]:
     """Rebuild each derived table with a real PRIMARY KEY and FOREIGN KEYs.
 
@@ -490,6 +513,10 @@ def apply_keys(conn: sqlite3.Connection, project: str) -> tuple[int, int]:
         cols = [(r[1], r[2] or "") for r in conn.execute(f'PRAGMA table_info("{table}")')]
         if not cols:
             continue
+        # CTAS leaves computed columns with no declared type at all. Recover one
+        # from the stored values so the rebuilt schema is properly typed rather
+        # than showing a blank.
+        cols = [(c, t or _sniff(conn, table, c)) for c, t in cols]
         idx = [r[0] for r in conn.execute(
             "SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL",
             (table,))]

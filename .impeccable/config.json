@@ -1,0 +1,41 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-radius",
+        "value": "6px",
+        "createdAt": "2026-08-04T22:58:31.255Z",
+        "reason": "Focus-ring radius; intentional off-ladder one-off preserved for pixel parity"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "5px",
+        "createdAt": "2026-08-04T22:58:31.312Z",
+        "reason": "Scrollbar-thumb radius; intentional off-ladder one-off preserved for pixel parity"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "9px",
+        "createdAt": "2026-08-04T22:58:31.380Z",
+        "reason": "Schema table-card radius; intentional off-ladder one-off preserved for pixel parity"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "docs/assets/style.css"
+        ],
+        "createdAt": "2026-08-04T22:58:31.450Z",
+        "reason": "Dense data UI uses a continuous micro-size range; DESIGN.md documents semantic type roles, not a closed ramp"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#000",
+        "createdAt": "2026-08-04T23:11:41.270Z",
+        "reason": "Print-only ink: @media print sets pure black on white for paper output, intentionally outside the screen palette"
+      }
+    ]
+  }
+}

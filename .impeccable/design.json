@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-04T00:00:00Z",
+  "title": "Design System: SQL Cheat Sheet",
+  "extensions": {
+    "colorMeta": {
+      "accent-terracotta": { "role": "primary", "displayName": "Terracotta Pencil", "canonical": "#b8532a", "darkScheme": "#e08155", "tonalRamp": ["oklch(22% 0.05 45)", "oklch(32% 0.08 45)", "oklch(42% 0.11 45)", "oklch(52% 0.13 45)", "oklch(58% 0.13 45)", "oklch(70% 0.11 45)", "oklch(82% 0.06 45)", "oklch(93% 0.02 45)"] },
+      "key-gold": { "role": "secondary", "displayName": "Key Gold", "canonical": "#c8952a", "darkScheme": "#d8a657", "tonalRamp": ["oklch(24% 0.05 85)", "oklch(35% 0.07 85)", "oklch(46% 0.09 85)", "oklch(57% 0.11 85)", "oklch(68% 0.12 85)", "oklch(78% 0.10 85)", "oklch(87% 0.06 85)", "oklch(94% 0.03 85)"] },
+      "relation-green": { "role": "secondary", "displayName": "Relation Green", "canonical": "#4a9d6e", "darkScheme": "#6ec49a", "tonalRamp": ["oklch(22% 0.04 155)", "oklch(32% 0.06 155)", "oklch(42% 0.08 155)", "oklch(52% 0.09 155)", "oklch(62% 0.10 155)", "oklch(73% 0.09 155)", "oklch(84% 0.06 155)", "oklch(93% 0.03 155)"] },
+      "unique-violet": { "role": "secondary", "displayName": "Unique Violet", "canonical": "#7a5cc4", "darkScheme": "#a78bfa", "tonalRamp": ["oklch(24% 0.06 290)", "oklch(34% 0.09 290)", "oklch(44% 0.12 290)", "oklch(52% 0.13 290)", "oklch(62% 0.13 290)", "oklch(73% 0.11 290)", "oklch(84% 0.07 290)", "oklch(93% 0.03 290)"] },
+      "syntax-comment": { "role": "tertiary", "displayName": "Comment Green", "canonical": "#3f7d3a", "darkScheme": "#7fb069", "tonalRamp": ["oklch(22% 0.04 140)", "oklch(32% 0.06 140)", "oklch(42% 0.08 140)", "oklch(50% 0.09 140)", "oklch(60% 0.09 140)", "oklch(72% 0.08 140)", "oklch(84% 0.05 140)", "oklch(93% 0.02 140)"] },
+      "syntax-function": { "role": "tertiary", "displayName": "Function Violet", "canonical": "#7a4bb8", "darkScheme": "#b79bea", "tonalRamp": ["oklch(24% 0.07 300)", "oklch(34% 0.10 300)", "oklch(44% 0.13 300)", "oklch(52% 0.14 300)", "oklch(62% 0.13 300)", "oklch(73% 0.10 300)", "oklch(84% 0.06 300)", "oklch(93% 0.03 300)"] },
+      "syntax-string": { "role": "tertiary", "displayName": "String Olive", "canonical": "#8a6a1f", "darkScheme": "#d8a657", "tonalRamp": ["oklch(24% 0.04 80)", "oklch(34% 0.06 80)", "oklch(44% 0.08 80)", "oklch(54% 0.09 80)", "oklch(64% 0.10 80)", "oklch(75% 0.08 80)", "oklch(86% 0.05 80)", "oklch(94% 0.02 80)"] },
+      "syntax-number": { "role": "tertiary", "displayName": "Number Teal", "canonical": "#2f6f8f", "darkScheme": "#6fb3cf", "tonalRamp": ["oklch(22% 0.04 230)", "oklch(32% 0.06 230)", "oklch(42% 0.08 230)", "oklch(50% 0.09 230)", "oklch(60% 0.09 230)", "oklch(72% 0.08 230)", "oklch(84% 0.05 230)", "oklch(93% 0.02 230)"] },
+      "ink": { "role": "neutral", "displayName": "Brown-Black Ink", "canonical": "#1a1917", "darkScheme": "#eceae6", "tonalRamp": ["oklch(16% 0.004 60)", "oklch(26% 0.004 60)", "oklch(38% 0.005 60)", "oklch(50% 0.005 60)", "oklch(62% 0.005 60)", "oklch(75% 0.004 60)", "oklch(86% 0.004 60)", "oklch(95% 0.003 60)"] },
+      "muted": { "role": "neutral", "displayName": "Muted Stone", "canonical": "#6b6862", "darkScheme": "#9a958c", "tonalRamp": ["oklch(20% 0.004 70)", "oklch(30% 0.004 70)", "oklch(40% 0.005 70)", "oklch(48% 0.005 70)", "oklch(58% 0.005 70)", "oklch(70% 0.005 70)", "oklch(82% 0.004 70)", "oklch(92% 0.003 70)"] },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "#e5e1db", "darkScheme": "#2c2a27", "tonalRamp": ["oklch(25% 0.004 70)", "oklch(38% 0.004 70)", "oklch(50% 0.004 70)", "oklch(62% 0.004 70)", "oklch(74% 0.004 70)", "oklch(83% 0.004 70)", "oklch(90% 0.004 70)", "oklch(96% 0.003 70)"] },
+      "paper": { "role": "neutral", "displayName": "Warm Paper", "canonical": "#fbfaf9", "darkScheme": "#161513", "tonalRamp": ["oklch(15% 0.004 60)", "oklch(26% 0.004 60)", "oklch(40% 0.004 60)", "oklch(54% 0.004 60)", "oklch(68% 0.003 60)", "oklch(80% 0.003 60)", "oklch(90% 0.003 60)", "oklch(98% 0.002 60)"] },
+      "surface": { "role": "neutral", "displayName": "Card Surface", "canonical": "#ffffff", "darkScheme": "#1e1d1a", "tonalRamp": ["oklch(18% 0.004 60)", "oklch(30% 0.004 60)", "oklch(44% 0.004 60)", "oklch(58% 0.003 60)", "oklch(72% 0.003 60)", "oklch(84% 0.002 60)", "oklch(93% 0.002 60)", "oklch(100% 0 0)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page title only.", "token": "--fs-display" },
+      "stat": { "displayName": "Stat", "purpose": "Header metric numbers. Tight, tabular figures.", "token": "--fs-stat" },
+      "headline": { "displayName": "Headline", "purpose": "Project titles (h2).", "token": "--fs-title" },
+      "body": { "displayName": "Body", "purpose": "The reading base; sans, the narrator voice.", "token": "1rem base" },
+      "small": { "displayName": "Small", "purpose": "Small body and controls: lede, question text, tabs, metadata, summaries, footer.", "token": "--fs-md" },
+      "label": { "displayName": "Label", "purpose": "Uppercase level names, section headings, captions, buttons, counts, hints.", "token": "--fs-sm" },
+      "data": { "displayName": "Data / Record", "purpose": "Database-produced values: SQL, schema fields, result tables, chips, Q-number tag.", "token": "--fs-xs" },
+      "meta": { "displayName": "Meta", "purpose": "Fine print: column types, FK references, paths, timings, the schema legend.", "token": "--fs-2xs" },
+      "badge": { "displayName": "Badge", "purpose": "PK / FK / UQ role badges; smallest step, bold, mono.", "token": "--fs-3xs" }
+    },
+    "shadows": [
+      { "name": "paper-lift", "value": "0 1px 2px rgba(0,0,0,.05), 0 4px 12px rgba(0,0,0,.04)", "purpose": "The single soft shadow, on cards / tab-bar / table headers so white surfaces don't dissolve into the near-white paper." },
+      { "name": "paper-lift-dark", "value": "0 1px 2px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.25)", "purpose": "Dark-scheme counterpart of paper-lift." }
+    ],
+    "motion": [
+      { "name": "state-fast", "value": "0.12s ease", "purpose": "Default state transition for hover on tabs, buttons, cards, links (color/border/background/transform)." },
+      { "name": "triangle-turn", "value": "0.15s ease", "purpose": "Disclosure triangle rotation on <details> open." },
+      { "name": "target-flash", "value": "flash 1.4s ease-out", "purpose": "One-shot terracotta background flash on the query panel you jumped to, to orient the reader." },
+      { "name": "reduced-motion", "value": "0.01ms", "purpose": "prefers-reduced-motion collapses all transitions/animations and disables the hover rise and smooth scroll." }
+    ],
+    "breakpoints": [
+      { "name": "none", "value": "intrinsic", "purpose": "No width breakpoints. All responsiveness via flex-wrap + clamp() + min(…,100%). Only media queries are prefers-color-scheme, prefers-reduced-motion, and print." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Project Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "The primary navigation: one rounded tab-bar surface holding the five project tabs; selected fills terracotta.",
+      "html": "<nav class=\"ds-tabbar\" role=\"tablist\" aria-label=\"Projects\"><button class=\"ds-tab is-selected\" role=\"tab\" aria-selected=\"true\"><span class=\"ds-tnum\">1</span><span>E-Commerce</span><span class=\"ds-tcount\">26</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\"><span class=\"ds-tnum\">2</span><span>Churn</span><span class=\"ds-tcount\">20</span></button></nav>",
+      "css": ".ds-tabbar { display:inline-flex; flex-wrap:wrap; gap:.3rem; padding:.3rem; background:var(--card,#fff); border:1px solid var(--line,#e5e1db); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,.05),0 4px 12px rgba(0,0,0,.04); } .ds-tab { display:flex; align-items:center; gap:.45rem; padding:.5rem .75rem; border:0; border-radius:8px; background:transparent; color:var(--mut,#6b6862); font:550 .85rem ui-sans-serif,system-ui,sans-serif; cursor:pointer; transition:background .12s,color .12s; } .ds-tab:hover { background:var(--bg,#fbfaf9); color:var(--fg,#1a1917); } .ds-tab.is-selected { background:var(--accent,#b8532a); color:#fff; } .ds-tnum { display:grid; place-items:center; width:1.3rem; height:1.3rem; border-radius:50%; background:var(--line,#e5e1db); color:var(--fg,#1a1917); font-size:.7rem; font-weight:700; } .ds-tab.is-selected .ds-tnum { background:rgba(255,255,255,.25); color:#fff; } .ds-tcount { font-size:.7rem; opacity:.7; font-variant-numeric:tabular-nums; }"
+    },
+    {
+      "name": "Toolbar Button",
+      "kind": "button",
+      "refersTo": "toolbar-button",
+      "description": "Quiet secondary action (Expand all / Collapse all); hover shifts text + border to terracotta with no fill change.",
+      "html": "<button class=\"ds-toolbar-btn\">Expand all panels</button>",
+      "css": ".ds-toolbar-btn { font:550 .76rem ui-sans-serif,system-ui,sans-serif; padding:.32rem .7rem; cursor:pointer; color:var(--mut,#6b6862); background:var(--card,#fff); border:1px solid var(--line,#e5e1db); border-radius:7px; transition:color .12s,border-color .12s; } .ds-toolbar-btn:hover { color:var(--accent,#b8532a); border-color:var(--accent,#b8532a); } .ds-toolbar-btn:focus-visible { outline:2px solid var(--accent,#b8532a); outline-offset:3px; }"
+    },
+    {
+      "name": "Question Card",
+      "kind": "card",
+      "refersTo": "question-card",
+      "description": "The workhorse: Q-number, business question, and a footer with row count + timing + a view-SQL affordance. Flat at rest, rises 2px on hover.",
+      "html": "<a class=\"ds-card\" href=\"#\"><span class=\"ds-qn\">Q14</span><p class=\"ds-q\">Which international customers are worth the most, by lifetime value and product variety?</p><span class=\"ds-file\">172 rows · 3 ms<span class=\"ds-go\">view SQL &rarr;</span></span></a>",
+      "css": ".ds-card { display:flex; flex-direction:column; background:var(--card,#fff); border:1px solid var(--line,#e5e1db); border-radius:10px; padding:.8rem .9rem .85rem; text-decoration:none; color:inherit; box-shadow:0 1px 2px rgba(0,0,0,.05),0 4px 12px rgba(0,0,0,.04); transition:transform .12s,border-color .12s; } .ds-card:hover { transform:translateY(-2px); border-color:var(--accent,#b8532a); } .ds-qn { font-size:.7rem; font-weight:700; color:var(--accent,#b8532a); letter-spacing:.06em; } .ds-q { margin:.25rem 0 .6rem; font-size:.89rem; line-height:1.5; flex:1; } .ds-file { display:flex; justify-content:space-between; align-items:baseline; gap:.5rem; font-size:.66rem; color:var(--mut,#6b6862); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; } .ds-go { color:var(--accent,#b8532a); font-weight:600; opacity:.75; } .ds-card:hover .ds-go { opacity:1; }"
+    },
+    {
+      "name": "Skill Chip",
+      "kind": "chip",
+      "refersTo": "skill-chip",
+      "description": "Read-only pill tagging the SQL techniques a difficulty level drills. Not interactive.",
+      "html": "<span class=\"ds-chip\">Window Functions</span> <span class=\"ds-chip\">RFM Segmentation</span>",
+      "css": ".ds-chip { display:inline-block; font-size:.72rem; padding:.15rem .55rem; border:1px solid var(--line,#e5e1db); border-radius:999px; color:var(--mut,#6b6862); background:var(--card,#fff); white-space:nowrap; }"
+    },
+    {
+      "name": "Schema Column Badges",
+      "kind": "custom",
+      "refersTo": "schema-badge-pk",
+      "description": "Relational-role badges inside the schema map: PK gold, FK green (with a reference line), UQ violet. Color encodes meaning, never decoration.",
+      "html": "<div class=\"ds-cols\"><div class=\"ds-col pk\"><span class=\"ds-cname\">customer_name</span><span class=\"ds-badge pk\">PK</span></div><div class=\"ds-col fk\"><span class=\"ds-cname\">customer</span><span class=\"ds-badge fk\">FK</span><span class=\"ds-ref\">&rarr; intl_customers.customer_name</span></div><div class=\"ds-col uq\"><span class=\"ds-cname\">order_id</span><span class=\"ds-badge uq\">UQ</span></div></div>",
+      "css": ".ds-cols { border:1px solid var(--line,#e5e1db); border-radius:9px; overflow:hidden; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem; max-width:22rem; } .ds-col { display:flex; align-items:center; flex-wrap:wrap; gap:.4rem; padding:.3rem .7rem; border-bottom:1px solid var(--line,#e5e1db); } .ds-col:last-child { border-bottom:0; } .ds-cname { font-weight:600; } .ds-badge { margin-left:auto; font-size:.58rem; font-weight:700; letter-spacing:.04em; padding:.08rem .3rem; border-radius:4px; } .ds-col.pk { background:color-mix(in srgb,var(--pk,#c8952a) 12%,transparent); } .ds-col.pk .ds-cname { color:var(--pk,#c8952a); } .ds-badge.pk { background:var(--pk,#c8952a); color:#1a1917; } .ds-col.fk { background:color-mix(in srgb,var(--fk,#4a9d6e) 12%,transparent); } .ds-col.fk .ds-cname { color:var(--fk,#4a9d6e); } .ds-badge.fk { background:var(--fk,#4a9d6e); color:#0d1f16; } .ds-col.uq .ds-cname { color:var(--cj,#7a5cc4); } .ds-badge.uq { background:var(--cj,#7a5cc4); color:#fff; } .ds-ref { flex-basis:100%; color:var(--mut,#6b6862); font-size:.64rem; }"
+    },
+    {
+      "name": "Disclosure Panel",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "Standard <details> container for schema and SQL/results, with a terracotta triangle that rotates on open.",
+      "html": "<details class=\"ds-panel\" open><summary>Database schema \u2014 19 tables, 200 columns <span class=\"ds-hint\">(click to expand)</span></summary><div style=\"padding:.7rem 1rem;font-size:.8rem;color:var(--mut,#6b6862)\">Panel body\u2026</div></details>",
+      "css": ".ds-panel { border:1px solid var(--line,#e5e1db); border-radius:10px; background:var(--card,#fff); } .ds-panel > summary { cursor:pointer; padding:.65rem 1rem; font-size:.84rem; font-weight:600; list-style:none; user-select:none; } .ds-panel > summary::-webkit-details-marker { display:none; } .ds-panel > summary::before { content:\"\\25B8\"; display:inline-block; margin-right:.5rem; color:var(--accent,#b8532a); transition:transform .15s ease; } .ds-panel[open] > summary::before { transform:rotate(90deg); } .ds-hint { font-weight:400; color:var(--mut,#6b6862); font-size:.78rem; }"
+    },
+    {
+      "name": "SQL Reader",
+      "kind": "custom",
+      "refersTo": "mono",
+      "description": "Hand-tokenized code block in the muted print-like syntax palette; the leading -- Qn: comment is highlighted in terracotta.",
+      "html": "<pre class=\"ds-sql\"><span class=\"c q1\">-- Q1: total revenue, orders and units</span>\n<span class=\"k\">SELECT</span> <span class=\"f\">COUNT</span>(<span class=\"k\">DISTINCT</span> order_id) <span class=\"k\">AS</span> orders,\n       <span class=\"f\">ROUND</span>(<span class=\"f\">SUM</span>(amount), <span class=\"n\">2</span>) <span class=\"k\">AS</span> revenue\n<span class=\"k\">FROM</span> order_lines\n<span class=\"k\">WHERE</span> status <span class=\"k\">=</span> <span class=\"s\">'Shipped'</span>;</pre>",
+      "css": ".ds-sql { margin:0; padding:.7rem .85rem; overflow-x:auto; tab-size:2; background:var(--bg,#fbfaf9); border:1px solid var(--line,#e5e1db); border-radius:7px; font:.72rem/1.55 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre; color:var(--fg,#1a1917); } .ds-sql .c { color:var(--syn-c,#3f7d3a); } .ds-sql .c.q1 { background:color-mix(in srgb,var(--accent,#b8532a) 22%,transparent); color:var(--fg,#1a1917); font-weight:700; padding:.05rem .35rem; border-radius:4px; } .ds-sql .k { color:var(--syn-k,#b8532a); font-weight:600; } .ds-sql .f { color:var(--syn-f,#7a4bb8); } .ds-sql .s { color:var(--syn-s,#8a6a1f); } .ds-sql .n { color:var(--syn-n,#2f6f8f); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Ledger",
+    "overview": "The system is an accounts ledger rendered with the warmth of an editorial page. A ledger's job is to reconcile: every value is accounted for, every column lines up, and nothing is fabricated — which is exactly the product's promise (queries written against what the data actually contains, 113/113 verified, caveats named rather than hidden). Monospace carries anything that is data — schema fields, SQL, result rows, paths, timings — so the reader can trust it is the literal record. Proportional sans carries the reading — the business questions, the teaching prose, the labels — so the page stays a document you want to stay inside, not a console you endure. Warmth keeps the rigor from turning clinical: a warm off-white paper ground, a brown-black ink, and a single terracotta accent that reads like a proofreader's red pencil. Surfaces are flat and quiet at rest, separated by hairlines, and lift only when touched. The world rejects the cold high-chrome developer dashboard and the flat generic docs template alike — this is paper-and-pencil precision, not a control panel.",
+    "keyCharacteristics": [
+      "Warm paper ground, brown-black ink, a single terracotta accent used sparingly.",
+      "Monospace for anything that is data; proportional sans for anything that is reading.",
+      "Flat by default; a soft ambient shadow and a 2px rise appear only on interaction.",
+      "Hairline borders and generous radii do the separating; color is reserved for meaning.",
+      "Fluid and intrinsic — the layout reflows by content weight, with no width breakpoints."
+    ],
+    "rules": [
+      { "name": "The One Pencil Rule", "body": "There is exactly one brand accent (Terracotta Pencil) and it stays rare — Q-numbers, active state, links, focus. If a screen looks terracotta-heavy, it's wrong; the accent earns attention by scarcity.", "section": "colors" },
+      { "name": "The Color-Is-Meaning Rule", "body": "A hue only appears when it encodes something true — a key role, a difficulty level, a syntax token. No color is used to decorate a surface. Neutrals and hairlines do all the structural work.", "section": "colors" },
+      { "name": "The Record-Is-Mono Rule", "body": "If a value came out of the database — a column name, a SQL token, a result cell, a row count, a millisecond timing — it is set in monospace. If a human wrote it to teach, it is set in sans. Never blur the two.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat and hairline-bordered at rest. Motion and shadow are earned by interaction (hover, focus, the target flash) — never applied as baseline decoration.", "section": "elevation" },
+      { "name": "The Contained-Scroll Rule", "body": "Overflow is always solved inside a bordered box (.tblwrap, pre.sql) — the page body itself never scrolls sideways.", "section": "layout" }
+    ],
+    "dos": [
+      "Do keep the accent rare — Terracotta Pencil for Q-numbers, active state, links, and focus only (The One Pencil Rule).",
+      "Do set every database-produced value (columns, SQL, result cells, counts, timings) in monospace, and every human explanation in sans (The Record-Is-Mono Rule).",
+      "Do keep surfaces flat with hairline borders at rest; reserve the Paper Lift shadow and the 2px rise for interaction (The Flat-By-Default Rule).",
+      "Do solve overflow inside bordered scroll boxes so the page never scrolls sideways (The Contained-Scroll Rule).",
+      "Do let content weight drive density — more words, fewer columns.",
+      "Do provide full dark-scheme counterparts for every token; the warm-paper character must survive into dark (warm near-black, not cold charcoal)."
+    ],
+    "donts": [
+      "Don't spend color on decoration — a hue must encode a key role, a difficulty level, or a syntax token (The Color-Is-Meaning Rule).",
+      "Don't rely on hue alone to tell difficulty from schema role: the level colors (green/gold/terracotta/violet) currently reuse the badge hues (FK/PK/accent/UQ), so always pair level color with its dot + uppercase label.",
+      "Don't introduce webfonts, gradients, neon-on-charcoal dashboard styling, or heavy drop shadows — they break the paper-and-pencil world.",
+      "Don't mute text with opacity (it drops small text under contrast minimums); reach for the Muted Stone token instead.",
+      "Don't bake content into markup — the surface is a thin shell rendered from data; keep it that way."
+    ]
+  }
+}
