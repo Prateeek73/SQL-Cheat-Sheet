@@ -25,10 +25,11 @@ import threading
 import time
 from pathlib import Path
 
-# The checkout the package sits in (pip install -e .), else the working directory
-# (the image installs it into site-packages and works from /app). SQLCS_ROOT overrides.
-_CHECKOUT = Path(__file__).resolve().parent.parent
-ROOT = Path(os.environ.get("SQLCS_ROOT") or (_CHECKOUT if (_CHECKOUT / "scripts").is_dir() else Path.cwd()))
+# The first of: SQLCS_ROOT, the checkout the package sits in (pip install -e .), the
+# working directory, /app (the image; a job may start in / rather than the image's WORKDIR).
+_CANDIDATES = [os.environ.get("SQLCS_ROOT"), Path(__file__).resolve().parent.parent, Path.cwd(), "/app"]
+ROOT = next((Path(c) for c in _CANDIDATES if c and (Path(c) / "scripts").is_dir()), Path.cwd())
+os.chdir(ROOT)  # the scripts write relative paths too (docs/RESULTS.md)
 SCRIPTS = ROOT / "scripts"
 DB_DIR = ROOT / "db"
 DOCS_DIR = ROOT / "docs"
@@ -146,6 +147,8 @@ def serve() -> int:
 
 def main() -> int:
     args = sys.argv[1:]
+    if args[:1] == ["sqlcs"]:  # a platform that passes the job's whole command as arguments to the entrypoint
+        args = args[1:]
     command = args[0] if args else "help"
     if command in ("fetch", "build", "run", "site"):
         return script({"site": "build_site"}.get(command, command), args[1:])
