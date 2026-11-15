@@ -20,6 +20,7 @@ from __future__ import annotations
 import http.server
 import os
 import runpy
+import shutil
 import sys
 import threading
 import time
@@ -34,6 +35,31 @@ SCRIPTS = ROOT / "scripts"
 DB_DIR = ROOT / "db"
 DOCS_DIR = ROOT / "docs"
 PREFIX = os.environ.get("SQLCS_PREFIX", "sql-cheat-sheet/")
+
+
+def use_scratch() -> None:
+    """Put data/ and db/ under $SQLCS_SCRATCH (e.g. a RAM-backed /tmp) when it is set.
+
+    A platform job's disk may be far smaller than the ~1 GB of downloads and databases;
+    its /tmp is RAM (half the job's memory). The scripts keep their paths: data/ and db/
+    become links into the scratch directory.
+    """
+    scratch = os.environ.get("SQLCS_SCRATCH")
+    if not scratch:
+        return
+    for name in ("data", "db"):
+        target = Path(scratch) / name
+        target.mkdir(parents=True, exist_ok=True)
+        link = ROOT / name
+        if link.is_symlink() and link.resolve() == target.resolve():
+            continue
+        if link.is_dir() and not any(link.iterdir()):
+            link.rmdir()
+        elif link.exists() or link.is_symlink():
+            sys.exit(f"sqlcs: {link} holds files; move them before using SQLCS_SCRATCH")
+        link.symlink_to(target, target_is_directory=True)
+    usage = shutil.disk_usage(scratch)
+    print(f"sqlcs: data/ and db/ in {scratch} ({usage.free / 2**30:.1f} GiB free)", flush=True)
 
 
 def script(name: str, args: list[str] | None = None) -> int:
@@ -150,6 +176,8 @@ def main() -> int:
     if args[:1] == ["sqlcs"]:  # a platform that passes the job's whole command as arguments to the entrypoint
         args = args[1:]
     command = args[0] if args else "help"
+    if command in ("fetch", "build", "run", "site", "push", "pull", "load", "refresh"):
+        use_scratch()
     if command in ("fetch", "build", "run", "site"):
         return script({"site": "build_site"}.get(command, command), args[1:])
     if command in ("push", "pull"):
