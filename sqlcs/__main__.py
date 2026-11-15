@@ -5,7 +5,7 @@ Commands (run from a checkout or the image, which is a checkout at /app):
   fetch | build | run | site   the existing scripts, unchanged (extra arguments pass through)
   push                         upload db/*.db and docs/ (the site) to the bucket
   pull                         download db/*.db from the bucket
-  load                         fetch, build, run, site, push         (a one-off job)
+  load                         fetch, build, drop the downloads, run, site, push   (a one-off job)
   refresh                      pull, run, site, push                 (a scheduled job)
   serve                        serve docs/ on $PORT; re-pull the site's data from the bucket
                                every $SQLCS_SYNC_SECONDS (default 300), so a refresh shows
@@ -58,8 +58,22 @@ def use_scratch() -> None:
         elif link.exists() or link.is_symlink():
             sys.exit(f"sqlcs: {link} holds files; move them before using SQLCS_SCRATCH")
         link.symlink_to(target, target_is_directory=True)
+    # SQLite's own temporary files (a big sort, an index build) default to /var/tmp, on the
+    # small disk: send them to the scratch directory as well.
+    tmp = Path(scratch) / "sqlite-tmp"
+    tmp.mkdir(parents=True, exist_ok=True)
+    os.environ["SQLITE_TMPDIR"] = str(tmp)
     usage = shutil.disk_usage(scratch)
-    print(f"sqlcs: data/ and db/ in {scratch} ({usage.free / 2**30:.1f} GiB free)", flush=True)
+    print(f"sqlcs: data/, db/ and SQLite's temp files in {scratch} ({usage.free / 2**30:.1f} GiB free)", flush=True)
+
+
+def drop_downloads() -> int:
+    """Free the downloads once the databases are built: nothing after build reads data/."""
+    raw = ROOT / "data"
+    for child in raw.iterdir() if raw.is_dir() else []:
+        shutil.rmtree(child) if child.is_dir() else child.unlink()
+    print("dropped data/ (the databases are built)", flush=True)
+    return 0
 
 
 def script(name: str, args: list[str] | None = None) -> int:
@@ -127,6 +141,7 @@ def steps(*names: str) -> int:
             "push": push,
             "push-site": lambda: push(databases=False),
             "pull": pull,
+            "drop-downloads": drop_downloads,
         }[step]()
         if code:
             print(f"sqlcs: {step} failed ({code})", file=sys.stderr)
@@ -183,7 +198,7 @@ def main() -> int:
     if command in ("push", "pull"):
         return steps(command)
     if command == "load":
-        return steps("fetch", "build", "run", "site", "push")
+        return steps("fetch", "build", "drop-downloads", "run", "site", "push")
     if command == "refresh":
         return steps("pull", "run", "site", "push-site")
     if command == "serve":
