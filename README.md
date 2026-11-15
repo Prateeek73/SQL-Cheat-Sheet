@@ -43,6 +43,31 @@ No Kaggle account? Download the five ZIPs by hand into `data/_incoming/` —
 `fetch.py` matches them by filename. (The Kaggle client is 2.x and no longer
 reads `kaggle.json`; use `kaggle auth login` or `~/.kaggle/access_token`.)
 
+## Package and image
+
+`pip install -e .` gives one command, `sqlcs`, over the same scripts:
+
+```bash
+sqlcs fetch | build | run | site   # the four steps above
+sqlcs load                          # fetch, build, run, site, then push db/ and docs/ to a bucket
+sqlcs refresh                       # pull db/ from the bucket, run, site, push docs/
+sqlcs serve                         # serve docs/ on $PORT, re-pulling the site's data from the bucket
+```
+
+The bucket is read from `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
+(and optional `S3_REGION`), under the prefix `SQLCS_PREFIX` (default `sql-cheat-sheet/`).
+
+`.github/workflows/image.yml` publishes `ghcr.io/prateeek73/sql-cheat-sheet` on every push to
+`main`; the image runs `sqlcs serve` by default (port 8080, health `/health`).
+
+### On the Pareto platform
+
+- **Load (one-off job):** `sqlcs load`, with a `KAGGLE_API_TOKEN` secret and the bucket's
+  `S3_*` secrets. About 1.1 GB of downloads; the databases and site land in the bucket.
+- **Refresh (scheduled job):** `sqlcs refresh`, same bucket secrets, no Kaggle token.
+- **Site (app):** the image's default command, port 8080, health `/health`, with the bucket
+  secrets; it picks up a refresh within `SQLCS_SYNC_SECONDS` (300 by default).
+
 ## The five projects
 
 | # | Database | Rows | Qs | Focus |
